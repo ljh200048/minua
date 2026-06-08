@@ -1,0 +1,12 @@
+/*
+MINUA BRAND ATELIER - PLACEHOLDER IMAGE FILE
+============================================
+이 파일은 '미니멀 솔리드 하프 밴드 (Minimal Solid Half Band)' 상품 이미지에 대한 플레이스홀더 파일입니다.
+Vite가 public 폴더를 번들링하여 서버에 정상 서빙할 수 있도록 이 파일 구조를 생성해 둡니다.
+
+[적용 체크리스트]:
+아래 방법을 통해 실제 고해상도 주얼리 촬영 사진으로 교체해주세요:
+1. 실제 상품 사진 파일의 이름을 'minimal-solid-half-band.jpg'로 변경합니다.
+2. 이 파일을 'public/images/minimal-solid-half-band.jpg' 경로에 덮어씌워(Overwrite) 업로드합니다.
+3. 브라우저 새로고침을 수행하시면, 플레이스홀더 대신 실사용 이미지가 즉각 화면에 출력됩니다.
+*/

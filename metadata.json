@@ -1,0 +1,6 @@
+{
+  "name": "MINUA (미누아)",
+  "description": "매일의 분위기를 완성하는 감성 주얼리 & 키링 브랜드 미누아(MINUA). 커스텀 주문 제작, att(어태치) 스토리, 인스타그램 연동 및 편리한 쇼핑몰 기능 제공.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
