@@ -76,6 +76,10 @@ export default function App() {
 
   // Save states modifications in effect hooks
   React.useEffect(() => {
+    document.title = "minua | 미누아";
+  }, []);
+
+  React.useEffect(() => {
     localStorage.setItem('minua_cart', JSON.stringify(cart));
   }, [cart]);
 
