@@ -43,22 +43,6 @@ export default function Header({
 
   return (
     <>
-      {/* 1. XTe Inspired DUAL Announcement Bars */}
-      <div className="w-full bg-neutral-100 border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 text-center text-[10px] sm:text-xs font-sans text-neutral-800 tracking-wider font-light">
-          {currentLang === 'KO' && "신규 회원 가입시 적립금 5,000원 지급"}
-          {currentLang === 'EN' && "5,000 KRW points instantly credited upon new registration"}
-          {currentLang === 'JP' && "新規会員登録で5,000ウォン相当のポイントプレゼント"}
-        </div>
-      </div>
-      <div className="w-full bg-neutral-950">
-        <div className="max-w-7xl mx-auto px-4 py-2 text-center text-[9.5px] sm:text-xs font-sans font-light tracking-widest text-neutral-200 uppercase">
-          {currentLang === 'KO' && "카카오플친 5,000원 적립금 쿠폰 발급"}
-          {currentLang === 'EN' && "Add Kakao Friend for a custom 5,000 KRW gift voucher"}
-          {currentLang === 'JP' && "LINE公式アカウントお友だち追加で5,000ウォン割引クーポン配布"}
-        </div>
-      </div>
-
       {/* 2. Main Luxury Sticky Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-neutral-150 py-3 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
