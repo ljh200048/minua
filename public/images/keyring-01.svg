@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#FAF8F5" />
+      <stop offset="100%" stop-color="#E8E4DC" />
+    </radialGradient>
+    
+    <!-- Metallic Silver Gradients -->
+    <linearGradient id="silverRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2F2F2" />
+      <stop offset="25%" stop-color="#A6A6A6" />
+      <stop offset="50%" stop-color="#FFFFFF" />
+      <stop offset="75%" stop-color="#737373" />
+      <stop offset="100%" stop-color="#E5E5E5" />
+    </linearGradient>
+    <linearGradient id="silverCharm" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="40%" stop-color="#CCCCCC" />
+      <stop offset="70%" stop-color="#777777" />
+      <stop offset="100%" stop-color="#B3B3B3" />
+    </linearGradient>
+    
+    <!-- Leather Gradients -->
+    <linearGradient id="leatherGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#543C32" />
+      <stop offset="50%" stop-color="#3B261D" />
+      <stop offset="100%" stop-color="#24150E" />
+    </linearGradient>
+
+    <!-- Brass / Bronze Accent Gradients -->
+    <linearGradient id="brassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6C587" />
+      <stop offset="50%" stop-color="#B88A3E" />
+      <stop offset="100%" stop-color="#7A561D" />
+    </linearGradient>
+    
+    <!-- Soft Drop Shadows -->
+    <filter id="softShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="8" dy="16" stdDeviation="12" flood-color="#5C554E" flood-opacity="0.25" />
+    </filter>
+    <filter id="smallShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="100%" height="100%" fill="url(#bgGrad)" />
+
+  <!-- Shadow Group for entire Keyring assembly close-up -->
+  <g filter="url(#softShadow)" transform="translate(10, 10)">
+    
+    <!-- MAIN LEATHER TAG / STRAP (Hangs down centrally-left) -->
+    <g transform="rotate(-5, 250, 180)">
+      <!-- Leather strap body -->
+      <path d="M 220 180 
+               L 280 180 
+               L 270 380 
+               C 270 410, 230 410, 230 380 
+               Z" 
+            fill="url(#leatherGrad)" stroke="#1F110B" stroke-width="1" />
+      
+      <!-- Handcraft stitches on both sides -->
+      <!-- Left side stitching -->
+      <path d="M 226 190 L 226 375" stroke="#C4B6AA" stroke-width="1.5" stroke-dasharray="4,6" stroke-linecap="round" opacity="0.8" />
+      <!-- Right side stitching -->
+      <path d="M 274 190 L 274 375" stroke="#C4B6AA" stroke-width="1.5" stroke-dasharray="4,6" stroke-linecap="round" opacity="0.8" />
+      <!-- Bottom stitching curve -->
+      <path d="M 233 385 C 235 395, 265 395, 267 385" stroke="#C4B6AA" stroke-width="1.5" stroke-dasharray="4,6" stroke-linecap="round" opacity="0.8" />
+      
+      <!-- Leather crease / textured grain lines (subtle) -->
+      <path d="M 235 240 Q 250 242 265 238" stroke="#1F110B" stroke-width="1" opacity="0.15" fill="none" />
+      <path d="M 232 300 Q 250 305 268 298" stroke="#1F110B" stroke-width="1" opacity="0.15" fill="none" />
+      <path d="M 238 350 Q 250 348 262 352" stroke="#1F110B" stroke-width="1" opacity="0.12" fill="none" />
+
+      <!-- Centered embossed branding "minua" -->
+      <text x="250" y="315" font-family="'Space Grotesk', 'Inter', sans-serif" font-size="11" font-weight="500" letter-spacing="4" fill="#1A0D07" text-anchor="middle" opacity="0.45">minua</text>
+      <!-- Subtle highlight on brand -->
+      <text x="250" y="316" font-family="'Space Grotesk', 'Inter', sans-serif" font-size="11" font-weight="500" letter-spacing="4" fill="#FFFFFF" text-anchor="middle" opacity="0.08">minua</text>
+    </g>
+
+    <!-- BRASS O-RING STUD (Securing Leather top) -->
+    <circle cx="250" cy="195" r="9" fill="url(#brassGrad)" stroke="#5C4215" stroke-width="1" />
+    <circle cx="250" cy="195" r="5" fill="#402D0E" />
+    <circle cx="250" cy="195" r="2.5" fill="url(#brassGrad)" />
+
+    <!-- REFINED METAL SHACKLE / CONNECTOR (Connecting ring to tag) -->
+    <path d="M 232 150 
+             C 232 125, 268 125, 268 150 
+             L 265 200 
+             C 265 208, 235 208, 235 200 
+             Z" 
+          fill="url(#silverCharm)" stroke="#595959" stroke-dasharray="none" stroke-width="1.5" />
+    
+    <!-- Shackle Pin/Screw bolt -->
+    <rect x="227" y="188" width="46" height="8" rx="2" fill="url(#silverRing)" stroke="#4A4A4A" stroke-width="1" />
+    <circle cx="230" cy="192" r="2" fill="#1F1F1F" />
+    <circle cx="270" cy="192" r="2" fill="#1F1F1F" />
+
+    <!-- MAIN PLATINUM O-RING (Top focus) -->
+    <!-- Outer ring shadow border -->
+    <circle cx="250" cy="115" r="48" fill="none" stroke="#2B2B2B" stroke-width="10" opacity="0.15" />
+    <!-- Outer metallic ring -->
+    <circle cx="250" cy="115" r="46" fill="none" stroke="url(#silverRing)" stroke-width="10.5" />
+    <!-- Inner ring highlight -->
+    <circle cx="250" cy="115" r="41" fill="none" stroke="#FFFFFF" stroke-width="1.5" opacity="0.6" />
+    <!-- Inner ring dark lip -->
+    <circle cx="250" cy="115" r="41.5" fill="none" stroke="#3D3D3D" stroke-width="1" opacity="0.2" />
+
+    <!-- CHARM 1: REFLECTIVE SILVER HEART CHARM (Hangs to the left side) -->
+    <g transform="translate(180, 205) rotate(-18)">
+      <!-- Connector tiny chain link -->
+      <ellipse cx="25" cy="5" rx="5" ry="8" fill="none" stroke="url(#silverRing)" stroke-width="3" />
+      <!-- Heart path representation -->
+      <path d="M 25 15 
+               C 5 0, 0 35, 25 50 
+               C 50 35, 45 0, 25 15 
+               Z" 
+            fill="url(#silverCharm)" stroke="#424242" stroke-width="1.5" filter="url(#smallShadow)" />
+      <!-- Heart highlight gloss (luxury feel) -->
+      <path d="M 22 21 C 12 11, 10 30, 20 42 C 16 34, 15 20, 22 21 Z" fill="#FFFFFF" opacity="0.4" />
+    </g>
+
+    <!-- CHARM 2: LOGO ENGRAVED PLATE (Hangs to the right side) -->
+    <g transform="translate(290, 185) rotate(15)">
+      <!-- Tiny chain links -->
+      <ellipse cx="15" cy="10" rx="4" ry="7" fill="none" stroke="url(#silverRing)" stroke-width="2.5" />
+      <ellipse cx="15" cy="22" rx="4" ry="7" fill="none" stroke="url(#silverRing)" stroke-width="2.5" />
+      
+      <!-- Round plate -->
+      <circle cx="15" cy="40" r="26" fill="url(#silverCharm)" stroke="#4D4D4D" stroke-width="1.5" filter="url(#smallShadow)" />
+      <!-- Internal border grove -->
+      <circle cx="15" cy="40" r="22" fill="none" stroke="#666666" stroke-width="1" opacity="0.4" />
+      <circle cx="15" cy="40" r="21" fill="none" stroke="#FFFFFF" stroke-width="0.8" opacity="0.3" />
+      <!-- Engraved "M" symbol in the center -->
+      <path d="M 8 46 L 8 34 L 12 40 L 15 36 L 18 40 L 22 34 L 22 46" fill="none" stroke="#1F110B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.65" />
+      <path d="M 8 47 L 8 35 L 12 41 L 15 37 L 18 41 L 22 35 L 22 47" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.15" />
+    </g>
+
+  </g>
+</svg>

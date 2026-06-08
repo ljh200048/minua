@@ -82,7 +82,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'keyring',
     descriptionKO: '미누아의 오리지널 "minua (미누아)" 커스텀 키링 모듈입니다. 나만의 기억, 영감, 그리고 패브릭 슬링이나 키 카드를 다양하게 엮으실 수 있습니다.',
     descriptionEN: 'MINUA`s original "minua (modular)" custom keyring module. Attach your daily inspirations, charms, and airpods smoothly.',
-    defaultImage: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=800&q=80',
+    defaultImage: '/images/keyring-01.svg',
     materialKO: '스틸 & 이탈리안 베지터블 레더 (Steel & Italian Veg Leather)',
     materialEN: 'Steel & Italian Vegetable Tanned Leather',
     options: {
@@ -99,7 +99,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'keyring',
     descriptionKO: '수공예 가죽 스레드 매듭 디테일과 견고한 엔티크 서크 루프로 연결감을 한층 높인 minua 라인의 스테디셀러 커넥터 키링입니다.',
     descriptionEN: 'Steady-seller knot keyring from our minua lineup, combining handcrafted premium leather braids with matching raw-steel loops.',
-    defaultImage: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&q=80',
+    defaultImage: '/images/keyring-02.svg',
     materialKO: '황동 & 슈렁큰 소가죽 (Brass & Shrunken Leather)',
     materialEN: 'Solid Brass & Cowhide Leather',
     options: {
