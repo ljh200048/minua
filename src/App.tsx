@@ -262,8 +262,8 @@ export default function App() {
     setReviews((prev) => [reviewItem, ...prev]);
   };
 
-  const handleLocalAuth = (email: string, name: string) => {
-    const u: User = { email, name };
+  const handleLocalAuth = (email: string, name: string, phone?: string) => {
+    const u: User = { email, name, phone };
     setLoggedInUser(u);
     localStorage.setItem('minua_user', JSON.stringify(u));
   };

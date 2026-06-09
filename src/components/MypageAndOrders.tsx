@@ -4,15 +4,17 @@
  */
 
 import React from 'react';
-import { Mail, CheckCircle2, User as CardUser, LogOut, Package, RefreshCw, Eye } from 'lucide-react';
+import { Mail, CheckCircle2, User as CardUser, LogOut, Package, RefreshCw, Eye, Lock } from 'lucide-react';
 import { DICTIONARY } from '../data';
 import { Order, User } from '../types';
+import { signUpWithEmail, loginWithEmail, db, isFirebaseConfigured } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface MypageAndOrdersProps {
   currentLang: 'KO' | 'EN' | 'JP';
   orders: Order[];
   loggedInUser: User | null;
-  onLogin: (email: string, name: string) => void;
+  onLogin: (email: string, name: string, phone?: string) => void;
   onLogout: () => void;
   setActiveTab: (tab: string) => void;
 }
@@ -27,9 +29,16 @@ export default function MypageAndOrders({
 }: MypageAndOrdersProps) {
   const dict = DICTIONARY[currentLang];
   
-  // Login form states
+  // Login & Sign-up form states
+  const [authMode, setAuthMode] = React.useState<'login' | 'signup'>('login');
   const [email, setEmail] = React.useState('');
   const [name, setName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [passwordConfirm, setPasswordConfirm] = React.useState('');
+  const [authError, setAuthError] = React.useState('');
+  const [authSuccess, setAuthSuccess] = React.useState('');
+  const [authLoading, setAuthLoading] = React.useState(false);
   const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null);
 
   // Search input for non-member tracking
@@ -37,13 +46,83 @@ export default function MypageAndOrders({
   const [searchedOrder, setSearchedOrder] = React.useState<Order | null>(null);
   const [searchError, setSearchError] = React.useState('');
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleAuthFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !name) return;
-    onLogin(email, name);
-    // Reset fields
-    setEmail('');
-    setName('');
+    setAuthError('');
+    setAuthSuccess('');
+    setAuthLoading(true);
+
+    try {
+      if (authMode === 'signup') {
+        if (!name || !email || !password || !passwordConfirm || !phone) {
+          throw new Error(currentLang === 'KO' ? '모든 항목을 입력해주세요.' : 'Please fill out all fields.');
+        }
+        if (password !== passwordConfirm) {
+          throw new Error(currentLang === 'KO' ? '비밀번호가 일치하지 않습니다.' : 'Passwords do not match.');
+        }
+        if (password.length < 6) {
+          throw new Error(currentLang === 'KO' ? '비밀번호는 최소 6자리 이상이어야 합니다.' : 'Password must be at least 6 characters.');
+        }
+
+        const registeredUser = await signUpWithEmail(email, password, name, phone);
+        if (registeredUser) {
+          setAuthSuccess(currentLang === 'KO' ? '회원가입이 정상적으로 완료되었습니다! 자동 로그인 중...' : 'Sign-up completed successfully! Logging in...');
+          setTimeout(() => {
+            onLogin(registeredUser.email || email, registeredUser.displayName || name, phone);
+            // Reset fields
+            setEmail('');
+            setName('');
+            setPassword('');
+            setPasswordConfirm('');
+            setPhone('');
+            setAuthSuccess('');
+            setAuthLoading(false);
+          }, 1500);
+        }
+      } else {
+        if (!email || !password) {
+          throw new Error(currentLang === 'KO' ? '이메일과 비밀번호를 입력해주세요.' : 'Please enter email and password.');
+        }
+        const loggedUser = await loginWithEmail(email, password);
+        if (loggedUser) {
+          // Retrieve user's custom fields (like phone)
+          let phoneToPass = '';
+          if (!isFirebaseConfigured()) {
+            const stored = localStorage.getItem('minua_local_users');
+            if (stored) {
+              try {
+                const localUsers = JSON.parse(stored);
+                const matched = localUsers.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+                if (matched) {
+                  phoneToPass = matched.phone || '';
+                }
+              } catch (_) {}
+            }
+          } else {
+            try {
+              const docRef = doc(db, 'users', loggedUser.uid);
+              const docSnap = await getDoc(docRef);
+              if (docSnap.exists()) {
+                phoneToPass = docSnap.data().phone || '';
+              }
+            } catch (err) {
+              console.warn('Failed to fetch user phone from firestore:', err);
+            }
+          }
+
+          onLogin(loggedUser.email || email, loggedUser.displayName || 'Essential Member', phoneToPass);
+          // Reset fields
+          setEmail('');
+          setName('');
+          setPassword('');
+          setPhone('');
+          setAuthLoading(false);
+        }
+      }
+    } catch (err: any) {
+      setAuthError(err.message || String(err));
+      setAuthLoading(false);
+    }
   };
 
   const handleTrackSearch = (e: React.FormEvent) => {
@@ -221,29 +300,84 @@ export default function MypageAndOrders({
             
             {/* 회원가입 / 로그인 폼 */}
             <div className="bg-white border border-stone-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
-              <div className="space-y-1.5">
-                <h3 className="text-base font-semibold tracking-wide text-stone-950 uppercase font-mono">
-                  {dict.loginTitle}
-                </h3>
-                <p className="text-xs text-stone-500 font-light">
-                  {dict.loginDesc}
+              <div className="flex border-b border-stone-100 pb-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError('');
+                    setAuthSuccess('');
+                  }}
+                  className={`flex-1 pb-3 text-center text-xs font-bold tracking-wider font-mono uppercase cursor-pointer transition-colors ${authMode === 'login' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-400 hover:text-stone-600'}`}
+                >
+                  {currentLang === 'KO' ? '로그인' : 'Sign In'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthError('');
+                    setAuthSuccess('');
+                  }}
+                  className={`flex-1 pb-3 text-center text-xs font-bold tracking-wider font-mono uppercase cursor-pointer transition-colors ${authMode === 'signup' ? 'border-b-2 border-stone-900 text-stone-900' : 'text-stone-400 hover:text-stone-600'}`}
+                >
+                  {currentLang === 'KO' ? '회원가입' : 'Sign Up'}
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-[11px] text-stone-500 font-light">
+                  {authMode === 'login' 
+                    ? (currentLang === 'KO' ? '등록된 이메일과 비밀번호로 로그인해주세요.' : 'Please sign in using your account credentials.')
+                    : (currentLang === 'KO' ? '이름, 이메일, 그리고 비밀번호를 입력해 멤버십 가입을 시작하세요.' : 'Join the MINUA Handcrafted Membership.')
+                  }
                 </p>
               </div>
 
-              <form onSubmit={handleLoginSubmit} className="space-y-4 text-stone-850">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-mono font-bold text-stone-500 block uppercase">
-                    {dict.nameLabel} *
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 text-xs border border-stone-200 bg-stone-50 rounded-lg focus:outline-hidden"
-                    placeholder="이름 입력 (예: 홍길동)"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
+              {authError && (
+                <div className="bg-red-50 text-red-700 text-xs py-2.5 px-3 rounded-lg font-medium border border-red-100 animate-shake">
+                  {authError}
                 </div>
+              )}
+
+              {authSuccess && (
+                <div className="bg-emerald-50 text-emerald-800 text-xs py-2.5 px-3 rounded-lg font-medium border border-emerald-100">
+                  {authSuccess}
+                </div>
+              )}
+
+              <form onSubmit={handleAuthFormSubmit} className="space-y-4 text-stone-850">
+                {authMode === 'signup' && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold text-stone-500 block uppercase">
+                        {dict.nameLabel} *
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 text-xs border border-stone-200 bg-stone-50 rounded-lg focus:outline-hidden"
+                        placeholder="이름 입력 (예: 홍길동)"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono font-bold text-stone-500 block uppercase">
+                        {currentLang === 'KO' ? '전화번호' : 'Phone Number'} *
+                      </label>
+                      <input
+                        type="tel"
+                        className="w-full px-3 py-2 text-xs border border-stone-200 bg-stone-50 rounded-lg focus:outline-hidden"
+                        placeholder={currentLang === 'KO' ? '전화번호 입력 (예: 010-1234-5678)' : 'Enter phone number'}
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-1">
                   <label className="text-[10px] font-mono font-bold text-stone-500 block uppercase">
@@ -259,20 +393,78 @@ export default function MypageAndOrders({
                   />
                 </div>
 
-                <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
-                  <span className="text-[10px] text-stone-400 leading-relaxed font-light block">
-                    {dict.nonMemberAlert}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-mono font-bold text-stone-500 block uppercase">
+                    {currentLang === 'KO' ? '비밀번호' : 'Password'} *
+                  </label>
+                  <input
+                    type="password"
+                    className="w-full px-3 py-2 text-xs border border-stone-200 bg-stone-50 rounded-lg focus:outline-hidden"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {authMode === 'signup' && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-bold text-stone-500 block uppercase">
+                      {currentLang === 'KO' ? '비밀번호 확인' : 'Confirm Password'} *
+                    </label>
+                    <input
+                      type="password"
+                      className="w-full px-3 py-2 text-xs border border-stone-200 bg-stone-50 rounded-lg focus:outline-hidden"
+                      placeholder="••••••••"
+                      value={passwordConfirm}
+                      onChange={(e) => setPasswordConfirm(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="bg-stone-50 p-2.5 rounded-lg border border-stone-100">
+                  <span className="text-[9px] text-stone-400 leading-relaxed font-light block">
+                    {authMode === 'login' 
+                      ? (currentLang === 'KO' 
+                          ? '회원 정보 조회 및 주문 내역, 혜택 확인을 위해 안전하게 로그인하세요.'
+                          : 'Sign in safely to browse active orders and hand-crafted benefits.')
+                      : (currentLang === 'KO'
+                          ? 'MINUA 회원가입 시 구매 내역 조회, 신상품 얼리액세스 알림 혜택을 드립니다.'
+                          : 'Early-access notifications with full custom profile saving.')
+                    }
                   </span>
                 </div>
 
                 <button
                   type="submit"
+                  disabled={authLoading}
                   id="anonymous-login-action"
-                  className="w-full py-2.5 bg-stone-900 hover:bg-stone-950 text-white font-mono text-xs font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-colors text-center"
+                  className="w-full py-2.5 bg-stone-900 hover:bg-stone-950 text-white font-mono text-xs font-bold uppercase tracking-widest rounded-lg cursor-pointer transition-colors text-center disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {dict.btnLogin}
+                  {authLoading && <span className="inline-block w-3.5 h-3.5 border-2 border-stone-300 border-t-white rounded-full animate-spin" />}
+                  <span>
+                    {authMode === 'login' ? dict.btnLogin : (currentLang === 'KO' ? '회원 가입 완료' : 'Complete Sign-Up')}
+                  </span>
                 </button>
               </form>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                    setAuthError('');
+                    setAuthSuccess('');
+                  }}
+                  className="text-[11px] font-sans text-stone-500 hover:text-stone-900 underline underline-offset-2 cursor-pointer transition-colors"
+                >
+                  {authMode === 'login'
+                    ? (currentLang === 'KO' ? '계정이 없으신가요? 간편 회원가입' : 'New to MINUA? Quick sign-up here.')
+                    : (currentLang === 'KO' ? '이미 계정이 있으신가요? 바로 로그인' : 'Already have an account? Sign in.')
+                  }
+                </button>
+              </div>
             </div>
 
             {/* 비회원 주문 코드 1회성 실시간 일치 조회 패널 */}

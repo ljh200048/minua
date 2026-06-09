@@ -11,7 +11,9 @@ import {
   signOut, 
   onAuthStateChanged, 
   User as FirebaseUser,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -142,9 +144,103 @@ export async function loginWithGoogle(): Promise<FirebaseUser | null> {
   }
 }
 
+export async function signUpWithEmail(email: string, password: string, displayName: string, phone: string): Promise<FirebaseUser | null> {
+  if (!isFirebaseConfigured() || !authInstance) {
+    let localUsers: any[] = [];
+    const stored = localStorage.getItem('minua_local_users');
+    if (stored) {
+      try {
+        localUsers = JSON.parse(stored);
+      } catch {
+        localUsers = [];
+      }
+    }
+    
+    const existing = localUsers.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      throw new Error('이미 가입된 이메일 주소입니다.');
+    }
+    
+    const newUser = {
+      uid: 'user_' + Date.now(),
+      email: email,
+      displayName: displayName,
+      password: password,
+      phone: phone
+    };
+    
+    localUsers.push(newUser);
+    localStorage.setItem('minua_local_users', JSON.stringify(localUsers));
+    
+    const mockUser = {
+      uid: newUser.uid,
+      email: newUser.email,
+      displayName: newUser.displayName,
+      emailVerified: true
+    } as unknown as FirebaseUser;
+    
+    return mockUser;
+  }
+
+  try {
+    const credential = await createUserWithEmailAndPassword(authInstance, email, password);
+    if (credential.user) {
+      await updateProfile(credential.user, { displayName });
+      try {
+        await setDoc(doc(dbInstance, 'users', credential.user.uid), {
+          uid: credential.user.uid,
+          email,
+          displayName,
+          phone,
+          createdAt: new Date().toISOString()
+        });
+      } catch (dbErr) {
+        console.warn('Could not save user profile to firestore:', dbErr);
+      }
+    }
+    return credential.user;
+  } catch (error: any) {
+    console.error('Email registration failed:', error);
+    let message = error.message;
+    if (error.code === 'auth/email-already-in-use') {
+      message = '이미 사용 중인 이메일 주소입니다.';
+    } else if (error.code === 'auth/weak-password') {
+      message = '비밀번호는 최소 6자리 이상이어야 합니다.';
+    } else if (error.code === 'auth/invalid-email') {
+      message = '유효하지 않은 이메일 형식입니다.';
+    }
+    throw new Error(message);
+  }
+}
+
 export async function loginWithEmail(email: string, password: string): Promise<FirebaseUser | null> {
   if (!isFirebaseConfigured() || !authInstance) {
     // Support robust demonstration out-of-the-box
+    let localUsers: any[] = [];
+    const stored = localStorage.getItem('minua_local_users');
+    if (stored) {
+      try {
+        localUsers = JSON.parse(stored);
+      } catch {
+        localUsers = [];
+      }
+    }
+    
+    const userMatch = localUsers.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    if (userMatch) {
+      if (userMatch.password === password) {
+        const mockUser = {
+          uid: userMatch.uid,
+          email: userMatch.email,
+          displayName: userMatch.displayName,
+          emailVerified: true
+        } as unknown as FirebaseUser;
+        return mockUser;
+      } else {
+        throw new Error('틀린 비밀번호이거나 올바르지 않은 사용자 인증 정보입니다.');
+      }
+    }
+
     if (email === 'lch200048@gmail.com') {
       if (password.length >= 6) {
         const mockUser = {
@@ -158,7 +254,7 @@ export async function loginWithEmail(email: string, password: string): Promise<F
         throw new Error('비밀번호는 최소 6자리 이상이어야 합니다.');
       }
     } else {
-      throw new Error('등록되지 않은 관리자 이메일입니다. lch200048@gmail.com으로 다시 시도바랍니다.');
+      throw new Error('등록되지 않은 사용자 이메일입니다. 회원가입을 먼저 진행하시거나 이메일을 확인해주십시오.');
     }
   }
 
