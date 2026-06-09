@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net (First Rule Rulebook)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Security Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerifiedEmail(email) {
+      return isSignedIn() && 
+             request.auth.token.email == email && 
+             request.auth.token.email_verified == true;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && (
+        isVerifiedEmail('lch200048@gmail.com') ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+    
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function isValidProduct(prod) {
+      return prod.id is string && prod.id.size() <= 128 &&
+             prod.nameKO is string && prod.nameKO.size() <= 200 &&
+             prod.nameEN is string && prod.nameEN.size() <= 200 &&
+             prod.nameJP is string && prod.nameJP.size() <= 200 &&
+             prod.category is string && prod.category.size() <= 100 &&
+             prod.price is number && prod.price >= 0 &&
+             prod.defaultImage is string && prod.defaultImage.size() <= 1048576; // support base64 embedded photo up to 1MB
+    }
+    
+    // Products Collection
+    match /products/{productId} {
+      allow read: if true;
+      
+      allow create: if isAdmin() && 
+                    isValidId(productId) &&
+                    isValidProduct(request.resource.data) &&
+                    request.resource.data.keys().hasAll(['id', 'nameKO', 'nameEN', 'nameJP', 'category', 'price', 'defaultImage']);
+                    
+      allow update: if isAdmin() && 
+                    isValidProduct(request.resource.data);
+                    
+      allow delete: if isAdmin();
+    }
+    
+    // Admins Configuration Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+  }
+}

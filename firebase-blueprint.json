@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "product": {
+      "title": "Product",
+      "description": "Store handmade jewellery product entry details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameKO": { "type": "string" },
+        "nameEN": { "type": "string" },
+        "nameJP": { "type": "string" },
+        "category": { "type": "string" },
+        "descriptionKO": { "type": "string" },
+        "descriptionEN": { "type": "string" },
+        "descriptionJP": { "type": "string" },
+        "defaultImage": { "type": "string" },
+        "materialKO": { "type": "string" },
+        "materialEN": { "type": "string" },
+        "materialJP": { "type": "string" },
+        "price": { "type": "number" },
+        "options": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "nameKO", "nameEN", "nameJP", "category", "price", "defaultImage"]
+    }
+  },
+  "firestore": {
+    "products": {
+      "schema": "product",
+      "description": "Jewellery products database list"
+    }
+  }
+}

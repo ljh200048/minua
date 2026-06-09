@@ -10,9 +10,10 @@ import { DICTIONARY } from '../data';
 interface FooterProps {
   currentLang: 'KO' | 'EN' | 'JP';
   onResetImages?: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
-export default function Footer({ currentLang, onResetImages }: FooterProps) {
+export default function Footer({ currentLang, onResetImages, onNavigateToAdmin }: FooterProps) {
   const dict = DICTIONARY[currentLang];
 
   return (
@@ -61,14 +62,24 @@ export default function Footer({ currentLang, onResetImages }: FooterProps) {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-[10.5px] leading-relaxed text-stone-600">
           <div className="max-w-xl">
             <p>{dict.footerBizInfo}</p>
-            {onResetImages && (
-              <button
-                onClick={onResetImages}
-                className="mt-2.5 text-stone-500 hover:text-amber-500 transition-colors underline underline-offset-2 cursor-pointer font-sans block"
-              >
-                {currentLang === 'KO' ? '초기 데모 템플릿 이미지로 복원' : 'Restore Default Demo Images'}
-              </button>
-            )}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 items-center mt-2.5">
+              {onResetImages && (
+                <button
+                  onClick={onResetImages}
+                  className="text-stone-500 hover:text-amber-500 transition-colors underline underline-offset-2 cursor-pointer font-sans block"
+                >
+                  {currentLang === 'KO' ? '초기 데모 템플릿 이미지로 복원' : 'Restore Default Demo Images'}
+                </button>
+              )}
+              {onNavigateToAdmin && (
+                <button
+                  onClick={onNavigateToAdmin}
+                  className="text-stone-450 hover:text-amber-550 transition-colors underline underline-offset-2 cursor-pointer font-sans block"
+                >
+                  {currentLang === 'KO' ? '🔒 본사 어드민 관리 센터 (/admin)' : '🔒 Manager Control Center (/admin)'}
+                </button>
+              )}
+            </div>
           </div>
           <p className="font-mono text-stone-700">
             © 2026 MINUA Atelier Corp. All rights reserved. Registered in Seoul.

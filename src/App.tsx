@@ -25,14 +25,88 @@ import CartAndCheckout from './components/CartAndCheckout';
 import MypageAndOrders from './components/MypageAndOrders';
 import GiftWrappingGuide from './components/GiftWrappingGuide';
 import ProductDetailModal from './components/ProductDetailModal';
+import AdminDashboard from './components/AdminDashboard';
 
 import { INITIAL_PRODUCTS, INITIAL_REVIEWS, DICTIONARY } from './data';
 import { Product, CartItem, Order, Review, User } from './types';
 import { getProductImage, saveOverriddenImage, clearOverriddenImages, getOverriddenImages } from './utils/imageDb';
+import { fetchProducts, auth, isFirebaseConfigured } from './lib/firebase';
 
 export default function App() {
   const [lang, setLang] = React.useState<'KO' | 'EN' | 'JP'>('KO');
   const [activeTab, setActiveTab] = React.useState<string>('home');
+  const [imageTick, setImageTick] = React.useState(0);
+
+  // Dynamic products catalog, populated from cloud database with local fallback
+  const [productsList, setProductsList] = React.useState<Product[]>(INITIAL_PRODUCTS);
+  const [isAdminView, setIsAdminView] = React.useState(false);
+
+  // Admin user tracking state (Firebase + memory fallback)
+  const [adminUser, setAdminUser] = React.useState<any>(() => {
+    const saved = localStorage.getItem('minua_admin_session');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  React.useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = auth.onAuthStateChanged((curr: any) => {
+      if (curr) {
+        setAdminUser(curr);
+        localStorage.setItem('minua_admin_session', JSON.stringify({
+          uid: curr.uid,
+          email: curr.email,
+          displayName: curr.displayName || 'Admin'
+        }));
+      } else {
+        if (isFirebaseConfigured()) {
+          setAdminUser(null);
+          localStorage.removeItem('minua_admin_session');
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const isAdminAuthenticated = adminUser && adminUser.email === 'lch200048@gmail.com';
+
+  React.useEffect(() => {
+    async function getSyncedProducts() {
+      const data = await fetchProducts(INITIAL_PRODUCTS);
+      setProductsList(data);
+    }
+    getSyncedProducts();
+  }, [imageTick]);
+
+  React.useEffect(() => {
+    const handleUrlRouting = () => {
+      const path = window.location.pathname;
+      if (path === '/admin') {
+        setIsAdminView(true);
+      } else {
+        setIsAdminView(false);
+      }
+    };
+    handleUrlRouting();
+    window.addEventListener('popstate', handleUrlRouting);
+    return () => window.removeEventListener('popstate', handleUrlRouting);
+  }, []);
+
+  const navigateToAdmin = () => {
+    window.history.pushState({}, '', '/admin');
+    setIsAdminView(true);
+  };
+
+  const navigateToHome = () => {
+    window.history.pushState({}, '', '/');
+    setIsAdminView(false);
+  };
   
   // Persistence state hooks loaded from LocalStorage
   const [cart, setCart] = React.useState<CartItem[]>(() => {
@@ -59,9 +133,6 @@ export default function App() {
     const saved = localStorage.getItem('minua_user');
     return saved ? JSON.parse(saved) : null;
   });
-
-  // Image override trigger state to force complete virtual re-renders
-  const [imageTick, setImageTick] = React.useState(0);
 
   // Active modulations
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
@@ -225,7 +296,7 @@ export default function App() {
   };
 
   // Filter products by selected categories
-  const filteredProducts = INITIAL_PRODUCTS.map(p => ({
+  const filteredProducts = productsList.map(p => ({
     ...p,
     defaultImage: getProductImage(p.id, p.defaultImage)
   })).filter(p => {
@@ -235,7 +306,16 @@ export default function App() {
 
   const cartTotalItems = cart.reduce((acc, curr) => acc + curr.quantity, 0);
 
-  return (
+  return isAdminView ? (
+    <AdminDashboard
+      currentLang={lang}
+      initialProducts={productsList}
+      onProductsUpdated={(updated) => {
+        setProductsList(updated);
+      }}
+      onClose={navigateToHome}
+    />
+  ) : (
     <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col justify-between selection:bg-amber-100 selection:text-stone-900 font-sans">
       
       {/* Dynamic Navigation Header */}
@@ -472,7 +552,7 @@ export default function App() {
 
               {/* Grid lists */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {INITIAL_PRODUCTS.slice(0, 3).map((prod) => {
+                {productsList.slice(0, 3).map((prod) => {
                   const resolvedImg = getProductImage(prod.id, prod.defaultImage);
                   const isWished = wishlist.includes(prod.id);
                   return (
@@ -515,44 +595,46 @@ export default function App() {
                         <div className="absolute inset-0 bg-stone-950/15 group-hover:bg-stone-950/20 transition-colors pointer-events-none" />
 
                         {/* Direct Image Swap Controller for store owners/users */}
-                        <div className="absolute bottom-4 left-4 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                          <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-3 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors">
-                            <Camera size={12} />
-                            <span>{lang === 'KO' ? '이미지 교체' : 'Swap Photo'}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    saveOverriddenImage(prod.id, reader.result as string);
+                        {isAdminAuthenticated && (
+                          <div className="absolute bottom-4 left-4 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-3 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors">
+                              <Camera size={12} />
+                              <span>{lang === 'KO' ? '이미지 교체' : 'Swap Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      saveOverriddenImage(prod.id, reader.result as string);
+                                      setImageTick(prev => prev + 1);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                            {getOverriddenImages()[prod.id] && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(lang === 'KO' ? '이 상품의 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this product to original design?')) {
+                                    const overrides = getOverriddenImages();
+                                    delete overrides[prod.id];
+                                    localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
                                     setImageTick(prev => prev + 1);
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </label>
-                          {getOverriddenImages()[prod.id] && (
-                            <button
-                              onClick={() => {
-                                if (confirm(lang === 'KO' ? '이 상품의 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this product to original design?')) {
-                                  const overrides = getOverriddenImages();
-                                  delete overrides[prod.id];
-                                  localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
-                                  setImageTick(prev => prev + 1);
-                                }
-                              }}
-                              className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-2 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors"
-                              title={lang === 'KO' ? '원래대로 복구' : 'Revert Original'}
-                            >
-                              <RefreshCw size={11} />
-                            </button>
-                          )}
-                        </div>
+                                  }
+                                }}
+                                className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-2 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors"
+                                title={lang === 'KO' ? '원래대로 복구' : 'Revert Original'}
+                              >
+                                <RefreshCw size={11} />
+                              </button>
+                            )}
+                          </div>
+                        )}
 
                         {/* Wishlist trigger */}
                         <button
@@ -701,44 +783,46 @@ export default function App() {
                         <div className="absolute inset-0 bg-stone-950/15 group-hover:bg-stone-950/20 transition-colors pointer-events-none" />
 
                         {/* Direct Image Swap Controller for store owners/users */}
-                        <div className="absolute bottom-4 left-4 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                          <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-3 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors">
-                            <Camera size={12} />
-                            <span>{lang === 'KO' ? '이미지 교체' : 'Swap Photo'}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    saveOverriddenImage(prod.id, reader.result as string);
+                        {isAdminAuthenticated && (
+                          <div className="absolute bottom-4 left-4 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-3 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors">
+                              <Camera size={12} />
+                              <span>{lang === 'KO' ? '이미지 교체' : 'Swap Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      saveOverriddenImage(prod.id, reader.result as string);
+                                      setImageTick(prev => prev + 1);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                            {getOverriddenImages()[prod.id] && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(lang === 'KO' ? '이 상품의 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this product to original design?')) {
+                                    const overrides = getOverriddenImages();
+                                    delete overrides[prod.id];
+                                    localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
                                     setImageTick(prev => prev + 1);
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                          </label>
-                          {getOverriddenImages()[prod.id] && (
-                            <button
-                              onClick={() => {
-                                if (confirm(lang === 'KO' ? '이 상품의 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this product to original design?')) {
-                                  const overrides = getOverriddenImages();
-                                  delete overrides[prod.id];
-                                  localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
-                                  setImageTick(prev => prev + 1);
-                                }
-                              }}
-                              className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-2 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors"
-                              title={lang === 'KO' ? '원래대로 복구' : 'Revert Original'}
-                            >
-                              <RefreshCw size={11} />
-                            </button>
-                          )}
-                        </div>
+                                  }
+                                }}
+                                className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-2 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors"
+                                title={lang === 'KO' ? '원래대로 복구' : 'Revert Original'}
+                              >
+                                <RefreshCw size={11} />
+                              </button>
+                            )}
+                          </div>
+                        )}
 
                         <button
                           id={`wish-archive-trigger-${prod.id}`}
@@ -812,7 +896,7 @@ export default function App() {
             currentLang={lang}
             reviews={reviews}
             onAddReview={handleAddReview}
-            products={INITIAL_PRODUCTS}
+            products={productsList}
           />
         )}
 
@@ -831,7 +915,7 @@ export default function App() {
       </main>
 
       {/* Elegant Footer Details */}
-      <Footer currentLang={lang} onResetImages={handleResetImages} />
+      <Footer currentLang={lang} onResetImages={handleResetImages} onNavigateToAdmin={navigateToAdmin} />
 
       {/* RENDER MODAL: DETAILED PRODUCT FEATURES VIEW */}
       {selectedProduct && (
@@ -842,14 +926,14 @@ export default function App() {
           onAddToCart={handleAddToCart}
           wishlist={wishlist}
           onToggleWishlist={handleToggleWishlist}
-          onImageChange={(newBase64) => {
+          onImageChange={isAdminAuthenticated ? (newBase64) => {
             saveOverriddenImage(selectedProduct.id, newBase64);
             setSelectedProduct({
               ...selectedProduct,
               defaultImage: newBase64
             });
             setImageTick(prev => prev + 1);
-          }}
+          } : undefined}
         />
       )}
 
