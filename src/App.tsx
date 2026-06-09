@@ -469,11 +469,10 @@ export default function App() {
                     fallbackBg: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop&q=80' 
                   },
                 ].map((cat) => (
-                  <button
+                  <div
                     key={cat.id}
                     id={`home-cat-card-${cat.id}`}
-                    onClick={() => setActiveTab(cat.id)}
-                    className="relative aspect-square rounded-2xl overflow-hidden group cursor-pointer focus:outline-hidden text-left shadow-2xs border border-stone-100"
+                    className="relative aspect-square rounded-2xl overflow-hidden group border border-stone-100 shadow-2xs"
                   >
                     <img
                       src={getProductImage(cat.id + '-cat-stub', cat.bg)}
@@ -485,9 +484,55 @@ export default function App() {
                         e.currentTarget.src = cat.fallbackBg;
                       }}
                     />
-                    <div className="absolute inset-0 bg-stone-950/45 group-hover:bg-stone-950/55 transition-colors" />
+                    {/* Clickable overlay to change active tab */}
+                    <button
+                      onClick={() => setActiveTab(cat.id)}
+                      className="absolute inset-0 bg-stone-950/45 group-hover:bg-stone-950/55 transition-colors text-left focus:outline-hidden cursor-pointer"
+                    />
+
+                    {/* Admin Image controller */}
+                    {isAdminAuthenticated && (
+                      <div className="absolute top-4 right-4 z-20 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-2.5 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[9px] font-mono tracking-wider font-semibold transition-colors">
+                          <Camera size={11} />
+                          <span>{lang === 'KO' ? '교체' : 'Swap'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  saveOverriddenImage(cat.id + '-cat-stub', reader.result as string);
+                                  setImageTick(prev => prev + 1);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                        {getOverriddenImages()[cat.id + '-cat-stub'] && (
+                          <button
+                            onClick={() => {
+                              if (confirm(lang === 'KO' ? '이 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this category image?')) {
+                                const overrides = getOverriddenImages();
+                                delete overrides[cat.id + '-cat-stub'];
+                                localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
+                                setImageTick(prev => prev + 1);
+                              }
+                            }}
+                            className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-1.5 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[9px] font-mono tracking-wider font-semibold transition-colors"
+                            title={lang === 'KO' ? '원래대로 복구' : 'Revert'}
+                          >
+                            <RefreshCw size={10} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                     
-                    <div className="absolute inset-5 flex flex-col justify-between text-stone-100 z-10">
+                    <div className="absolute inset-5 flex flex-col justify-between text-stone-100 z-10 pointer-events-none">
                       <span className="text-[10px] font-mono tracking-wider text-amber-400 bg-white/10 px-2.5 py-0.5 rounded-full select-none w-fit">
                         Collection ({cat.count})
                       </span>
@@ -498,7 +543,7 @@ export default function App() {
                         </p>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
