@@ -13,7 +13,8 @@ import {
   Upload,
   RefreshCw,
   Gift,
-  ArrowRight
+  ArrowRight,
+  Camera
 } from 'lucide-react';
 
 import Header from './components/Header';
@@ -27,7 +28,7 @@ import ProductDetailModal from './components/ProductDetailModal';
 
 import { INITIAL_PRODUCTS, INITIAL_REVIEWS, DICTIONARY } from './data';
 import { Product, CartItem, Order, Review, User } from './types';
-import { getProductImage, saveOverriddenImage, clearOverriddenImages } from './utils/imageDb';
+import { getProductImage, saveOverriddenImage, clearOverriddenImages, getOverriddenImages } from './utils/imageDb';
 
 export default function App() {
   const [lang, setLang] = React.useState<'KO' | 'EN' | 'JP'>('KO');
@@ -486,7 +487,7 @@ export default function App() {
                         <img
                           src={resolvedImg}
                           alt={prod.nameEN}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103 absolute inset-0"
+                          className={`w-full h-full ${prod.category === 'ring' || prod.category === 'keyring' ? 'object-contain p-4 bg-[#FCFAF7]' : 'object-cover'} transition-transform duration-500 group-hover:scale-103 absolute inset-0`}
                           referrerPolicy="no-referrer"
                           onError={(e) => {
                             // Hide the broken img element and show our beautiful fallback state
@@ -512,6 +513,46 @@ export default function App() {
                           </p>
                         </div>
                         <div className="absolute inset-0 bg-stone-950/15 group-hover:bg-stone-950/20 transition-colors pointer-events-none" />
+
+                        {/* Direct Image Swap Controller for store owners/users */}
+                        <div className="absolute bottom-4 left-4 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-3 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors">
+                            <Camera size={12} />
+                            <span>{lang === 'KO' ? '이미지 교체' : 'Swap Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    saveOverriddenImage(prod.id, reader.result as string);
+                                    setImageTick(prev => prev + 1);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                          {getOverriddenImages()[prod.id] && (
+                            <button
+                              onClick={() => {
+                                if (confirm(lang === 'KO' ? '이 상품의 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this product to original design?')) {
+                                  const overrides = getOverriddenImages();
+                                  delete overrides[prod.id];
+                                  localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
+                                  setImageTick(prev => prev + 1);
+                                }
+                              }}
+                              className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-2 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors"
+                              title={lang === 'KO' ? '원래대로 복구' : 'Revert Original'}
+                            >
+                              <RefreshCw size={11} />
+                            </button>
+                          )}
+                        </div>
 
                         {/* Wishlist trigger */}
                         <button
@@ -632,7 +673,7 @@ export default function App() {
                         <img
                           src={prod.defaultImage}
                           alt={prod.nameEN}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103 absolute inset-0"
+                          className={`w-full h-full ${prod.category === 'ring' || prod.category === 'keyring' ? 'object-contain p-4 bg-[#FCFAF7]' : 'object-cover'} transition-transform duration-500 group-hover:scale-103 absolute inset-0`}
                           referrerPolicy="no-referrer"
                           onError={(e) => {
                             // Hide the broken img element and show our beautiful fallback state
@@ -658,6 +699,46 @@ export default function App() {
                           </p>
                         </div>
                         <div className="absolute inset-0 bg-stone-950/15 group-hover:bg-stone-950/20 transition-colors pointer-events-none" />
+
+                        {/* Direct Image Swap Controller for store owners/users */}
+                        <div className="absolute bottom-4 left-4 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                          <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-3 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors">
+                            <Camera size={12} />
+                            <span>{lang === 'KO' ? '이미지 교체' : 'Swap Photo'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    saveOverriddenImage(prod.id, reader.result as string);
+                                    setImageTick(prev => prev + 1);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                          {getOverriddenImages()[prod.id] && (
+                            <button
+                              onClick={() => {
+                                if (confirm(lang === 'KO' ? '이 상품의 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this product to original design?')) {
+                                  const overrides = getOverriddenImages();
+                                  delete overrides[prod.id];
+                                  localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
+                                  setImageTick(prev => prev + 1);
+                                }
+                              }}
+                              className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-2 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[10px] font-mono tracking-wider font-semibold transition-colors"
+                              title={lang === 'KO' ? '원래대로 복구' : 'Revert Original'}
+                            >
+                              <RefreshCw size={11} />
+                            </button>
+                          )}
+                        </div>
 
                         <button
                           id={`wish-archive-trigger-${prod.id}`}
@@ -750,7 +831,7 @@ export default function App() {
       </main>
 
       {/* Elegant Footer Details */}
-      <Footer currentLang={lang} />
+      <Footer currentLang={lang} onResetImages={handleResetImages} />
 
       {/* RENDER MODAL: DETAILED PRODUCT FEATURES VIEW */}
       {selectedProduct && (
@@ -761,6 +842,14 @@ export default function App() {
           onAddToCart={handleAddToCart}
           wishlist={wishlist}
           onToggleWishlist={handleToggleWishlist}
+          onImageChange={(newBase64) => {
+            saveOverriddenImage(selectedProduct.id, newBase64);
+            setSelectedProduct({
+              ...selectedProduct,
+              defaultImage: newBase64
+            });
+            setImageTick(prev => prev + 1);
+          }}
         />
       )}
 

@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { HelpCircle, Check, Truck, Sparkles, Heart } from 'lucide-react';
+import { HelpCircle, Check, Truck, Sparkles, Heart, Camera } from 'lucide-react';
 import { DICTIONARY } from '../data';
 import { Product, CartItem } from '../types';
 
@@ -15,6 +15,7 @@ interface ProductDetailModalProps {
   onAddToCart: (item: Omit<CartItem, 'id' | 'quantity'>, count: number) => void;
   wishlist: string[];
   onToggleWishlist: (id: string) => void;
+  onImageChange?: (base64Url: string) => void;
 }
 
 export default function ProductDetailModal({
@@ -23,7 +24,8 @@ export default function ProductDetailModal({
   onClose,
   onAddToCart,
   wishlist,
-  onToggleWishlist
+  onToggleWishlist,
+  onImageChange
 }: ProductDetailModalProps) {
   const dict = DICTIONARY[currentLang];
   
@@ -105,10 +107,33 @@ export default function ProductDetailModal({
         <div className="flex-1 bg-stone-50 min-h-[300px] md:min-h-none flex items-center justify-center relative p-6 md:p-10 border-b md:border-b-0 md:border-r border-stone-150 shrink-0">
           {/* public/images 폴더 내에 실제 이미지 파일이 있어야 온전히 이미지가 렌더링됩니다. */}
           <div className="w-full aspect-square rounded-2xl overflow-hidden shadow-xs relative bg-white flex items-center justify-center">
+            {/* Direct Image Swap Controller for store owners/users */}
+            {onImageChange && (
+              <label className="absolute top-4 left-4 z-20 bg-stone-900/95 hover:bg-amber-900 text-white rounded-full px-3 py-1.5 cursor-pointer shadow-md transition-colors flex items-center gap-1.5 text-[10px] font-mono tracking-wider font-semibold">
+                <Camera size={13} />
+                <span>{currentLang === 'KO' ? '이미지 변경' : 'Change Photo'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        onImageChange(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </label>
+            )}
+
             <img
               src={product.defaultImage}
               alt={product.nameEN}
-              className="w-full h-full object-cover select-none absolute inset-0 font-sans"
+              className={`w-full h-full ${product.category === 'ring' || product.category === 'keyring' ? 'object-contain p-6 bg-[#FCFAF7]' : 'object-cover'} select-none absolute inset-0 font-sans`}
               referrerPolicy="no-referrer"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';

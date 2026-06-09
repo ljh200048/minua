@@ -9,9 +9,10 @@ import { DICTIONARY } from '../data';
 
 interface FooterProps {
   currentLang: 'KO' | 'EN' | 'JP';
+  onResetImages?: () => void;
 }
 
-export default function Footer({ currentLang }: FooterProps) {
+export default function Footer({ currentLang, onResetImages }: FooterProps) {
   const dict = DICTIONARY[currentLang];
 
   return (
@@ -58,7 +59,17 @@ export default function Footer({ currentLang }: FooterProps) {
 
         {/* Bottom copyright metadata details */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-[10.5px] leading-relaxed text-stone-600">
-          <p className="max-w-xl">{dict.footerBizInfo}</p>
+          <div className="max-w-xl">
+            <p>{dict.footerBizInfo}</p>
+            {onResetImages && (
+              <button
+                onClick={onResetImages}
+                className="mt-2.5 text-stone-500 hover:text-amber-500 transition-colors underline underline-offset-2 cursor-pointer font-sans block"
+              >
+                {currentLang === 'KO' ? '초기 데모 템플릿 이미지로 복원' : 'Restore Default Demo Images'}
+              </button>
+            )}
+          </div>
           <p className="font-mono text-stone-700">
             © 2026 MINUA Atelier Corp. All rights reserved. Registered in Seoul.
           </p>

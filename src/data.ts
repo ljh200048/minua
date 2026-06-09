@@ -14,7 +14,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'ring',
     descriptionKO: '손가락을 부드럽게 감싸는 미세한 유선형 웨이브가 일상에 잔잔한 무드를 선사하는 실버 925 반지입니다. 심플하면서도 우아한 감성 디자인.',
     descriptionEN: 'A 925 sterling silver ring featuring a gentle organic wave that wraps around your finger, offering a subtle mood to your everyday look.',
-    defaultImage: 'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=800&auto=format&fit=crop&q=80',
+    defaultImage: '/images/ring-01.svg',
     materialKO: '실버 925 (Sterling Silver)',
     materialEN: '925 Sterling Silver',
     options: {
@@ -31,7 +31,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'ring',
     descriptionKO: '정교하게 폴리싱된 플랫한 표면과 묵직한 두께감이 조화를 이루어, 단독 착용은 물론 가이드 링과도 완벽히 레이어링되는 중성적 무드의 밴드.',
     descriptionEN: 'A high-polished flat flat flat band with moderate weight, perfectly designed for standalone styling or stacking with guide rings.',
-    defaultImage: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80',
+    defaultImage: '/images/ring-02.svg',
     materialKO: '실버 925 (Sterling Silver)',
     materialEN: '925 Sterling Silver',
     options: {

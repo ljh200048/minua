@@ -216,7 +216,7 @@ export default function CartAndCheckout({
                       <img 
                         src={item.product.defaultImage} 
                         alt={item.product.nameEN} 
-                        className="w-full h-full object-cover absolute inset-0" 
+                        className={`w-full h-full ${item.product.category === 'ring' || item.product.category === 'keyring' ? 'object-contain p-1.5 bg-[#FCFAF7]' : 'object-cover'} absolute inset-0`} 
                         referrerPolicy="no-referrer"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
