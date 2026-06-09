@@ -9,11 +9,10 @@ import { DICTIONARY } from '../data';
 
 interface FooterProps {
   currentLang: 'KO' | 'EN' | 'JP';
-  onResetImages?: () => void;
   onNavigateToAdmin?: () => void;
 }
 
-export default function Footer({ currentLang, onResetImages, onNavigateToAdmin }: FooterProps) {
+export default function Footer({ currentLang, onNavigateToAdmin }: FooterProps) {
   const dict = DICTIONARY[currentLang];
 
   return (
@@ -63,14 +62,6 @@ export default function Footer({ currentLang, onResetImages, onNavigateToAdmin }
           <div className="max-w-xl">
             <p>{dict.footerBizInfo}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-1 items-center mt-2.5">
-              {onResetImages && (
-                <button
-                  onClick={onResetImages}
-                  className="text-stone-500 hover:text-amber-500 transition-colors underline underline-offset-2 cursor-pointer font-sans block"
-                >
-                  {currentLang === 'KO' ? '초기 데모 템플릿 이미지로 복원' : 'Restore Default Demo Images'}
-                </button>
-              )}
               {onNavigateToAdmin && (
                 <button
                   onClick={onNavigateToAdmin}

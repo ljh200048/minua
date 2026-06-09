@@ -29,7 +29,7 @@ import AdminDashboard from './components/AdminDashboard';
 
 import { INITIAL_PRODUCTS, INITIAL_REVIEWS, DICTIONARY } from './data';
 import { Product, CartItem, Order, Review, User } from './types';
-import { getProductImage, saveOverriddenImage, clearOverriddenImages, getOverriddenImages } from './utils/imageDb';
+import { getProductImage, saveOverriddenImage, getOverriddenImages } from './utils/imageDb';
 import { fetchProducts, auth, isFirebaseConfigured } from './lib/firebase';
 
 export default function App() {
@@ -285,13 +285,6 @@ export default function App() {
         setTimeout(() => setOwnerSuccessMessage(''), 3000);
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleResetImages = () => {
-    if (confirm(lang === 'KO' ? '모든 커스텀 이미지를 비우고 초기 탬플릿 리소스로 복원하시겠습니까?' : 'Reset to default design placeholders?')) {
-      clearOverriddenImages();
-      setImageTick(prev => prev + 1);
     }
   };
 
@@ -915,7 +908,7 @@ export default function App() {
       </main>
 
       {/* Elegant Footer Details */}
-      <Footer currentLang={lang} onResetImages={handleResetImages} onNavigateToAdmin={navigateToAdmin} />
+      <Footer currentLang={lang} onNavigateToAdmin={navigateToAdmin} />
 
       {/* RENDER MODAL: DETAILED PRODUCT FEATURES VIEW */}
       {selectedProduct && (
