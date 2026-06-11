@@ -10,6 +10,7 @@ export interface Product {
   price: number;
   originalPrice?: number;
   category: 'ring' | 'bracelet' | 'keyring' | 'gift' | 'earring' | 'necklace';
+  isBest?: boolean;
   descriptionKO: string;
   descriptionEN: string;
   defaultImage: string;

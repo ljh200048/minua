@@ -161,17 +161,29 @@ export default function ProductDetailModal({
             </div>
             
             {/* Absolute floating category label */}
-            <span className="absolute bottom-4 left-4 bg-stone-900/85 backdrop-blur-xs text-white text-[10px] font-mono tracking-widest font-semibold px-3 py-1 rounded-sm uppercase z-10">
-              {product.category}
-            </span>
+            <div className="absolute bottom-4 left-4 flex flex-col gap-1.5 z-10 text-left items-start">
+              {product.isBest && (
+                <span className="bg-amber-900/95 backdrop-blur-xs text-stone-50 text-[9px] font-mono tracking-widest font-extrabold px-2.5 py-1 rounded-xs uppercase">
+                  ★ BEST SELLER
+                </span>
+              )}
+              <span className="bg-stone-900/85 backdrop-blur-xs text-white text-[9px] font-mono tracking-widest font-semibold px-2.5 py-1 rounded-sm uppercase">
+                {product.category}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Column B: Purchase config & options details selectors */}
         <div className="flex-1 p-6 sm:p-10 space-y-6 overflow-y-auto md:max-h-[85vh]">
           <div>
-            <h3 className="text-2xl font-bold font-sans text-stone-900 leading-tight">
-              {currentLang === 'KO' ? product.nameKO : product.nameEN}
+            <h3 className="text-2xl font-bold font-sans text-stone-900 leading-tight flex items-center gap-2 flex-wrap">
+              <span>{currentLang === 'KO' ? product.nameKO : product.nameEN}</span>
+              {product.isBest && (
+                <span className="text-[9px] bg-amber-100 text-amber-950 px-2 py-0.5 rounded-full font-mono font-bold tracking-wider uppercase">
+                  Best Seller
+                </span>
+              )}
             </h3>
             
             {/* Price section featuring real customized incrementations */}

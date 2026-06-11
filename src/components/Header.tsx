@@ -35,6 +35,7 @@ export default function Header({
 
   const primaryNavItems = [
     { id: 'all', label: currentLang === 'KO' ? '전체 주얼리' : currentLang === 'JP' ? 'すべてのジュエリー' : 'All Jewelry' },
+    { id: 'best', label: currentLang === 'KO' ? '🔥 베스트셀러' : currentLang === 'JP' ? '🔥 ベ스트セラー' : '🔥 Best Sellers' },
     { id: 'ring', label: dict.menuRing },
     { id: 'bracelet', label: dict.menuBracelet },
     { id: 'keyring', label: dict.menuKeyring },

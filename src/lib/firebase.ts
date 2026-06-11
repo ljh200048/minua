@@ -456,6 +456,7 @@ export async function fetchProducts(initialList: Product[]): Promise<Product[]> 
         nameEN: data.nameEN || '',
         price: Number(data.price) || 0,
         category: data.category || 'ring',
+        isBest: data.isBest !== undefined ? data.isBest : false,
         descriptionKO: data.descriptionKO || '',
         descriptionEN: data.descriptionEN || '',
         defaultImage: data.defaultImage || data.imageUrl || '',

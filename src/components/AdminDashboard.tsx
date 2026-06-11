@@ -928,6 +928,20 @@ export default function AdminDashboard({
                 </div>
               </div>
 
+              {/* Bestseller option toggle */}
+              <div className="flex items-center space-x-2 pt-1 pb-2">
+                <input
+                  type="checkbox"
+                  id="edit-product-is-best"
+                  checked={!!editingProduct.isBest}
+                  onChange={(e) => handleEditProductChange('isBest', e.target.checked)}
+                  className="w-4 h-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600"
+                />
+                <label htmlFor="edit-product-is-best" className="text-xs font-semibold text-stone-700 cursor-pointer select-none">
+                  ★ 베스트셀러 상품으로 선정 (Labled with ★ BEST highlights badge in catalogs)
+                </label>
+              </div>
+
               {/* Materials inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -1133,6 +1147,20 @@ export default function AdminDashboard({
                     <option value="gift">커플 / 선물 (Couple / Gift)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Bestseller option toggle */}
+              <div className="flex items-center space-x-2 pt-1 pb-2">
+                <input
+                  type="checkbox"
+                  id="new-product-is-best"
+                  checked={!!newProduct.isBest}
+                  onChange={(e) => handleNewProductChange('isBest', e.target.checked)}
+                  className="w-4 h-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600"
+                />
+                <label htmlFor="new-product-is-best" className="text-xs font-semibold text-stone-700 cursor-pointer select-none">
+                  ★ 베스트셀러 상품으로 선정 (Labled with ★ BEST highlights badge in catalogs)
+                </label>
               </div>
 
               {/* Materials inputs */}

@@ -372,6 +372,7 @@ export default function App() {
     defaultImage: getProductImage(p.id, p.defaultImage)
   })).filter(p => {
     if (activeTab === 'all' || activeTab === 'home') return true;
+    if (activeTab === 'best') return !!p.isBest;
     return p.category === activeTab;
   });
 
@@ -878,8 +879,8 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 2: PRODUCT ARCHIVE SHOP (Ring, Bracelet, Keyring, Gift, Earring, Necklace) */}
-        {(activeTab === 'all' || activeTab === 'ring' || activeTab === 'bracelet' || activeTab === 'keyring' || activeTab === 'gift' || activeTab === 'earring' || activeTab === 'necklace') && (
+        {/* VIEW 2: PRODUCT ARCHIVE SHOP (Ring, Bracelet, Keyring, Gift, Earring, Necklace, Best) */}
+        {(activeTab === 'all' || activeTab === 'best' || activeTab === 'ring' || activeTab === 'bracelet' || activeTab === 'keyring' || activeTab === 'gift' || activeTab === 'earring' || activeTab === 'necklace') && (
           <div id="product-archive-panel" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 animate-fadeIn">
             
             {/* Upper Category Filter indicators */}
@@ -889,7 +890,11 @@ export default function App() {
                   MINUA ATELIER COLLECTION
                 </span>
                 <h2 className="text-3xl font-semibold text-stone-900 tracking-tight capitalize font-sans">
-                  {activeTab === 'all' ? (lang === 'KO' ? '전체 크래프트 라인업' : 'All Crafts Archive') : dict[`menu${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}` as keyof typeof dict] || activeTab}
+                  {activeTab === 'all'
+                    ? (lang === 'KO' ? '전체 크래프트 라인업' : 'All Crafts Archive')
+                    : activeTab === 'best'
+                    ? (lang === 'KO' ? '인기 베스트상품 대표 라인업' : 'Best Sellers Archive')
+                    : dict[`menu${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}` as keyof typeof dict] || activeTab}
                 </h2>
                 <div className="w-12 h-1 bg-amber-800 rounded-xs" />
               </div>
@@ -898,6 +903,7 @@ export default function App() {
               <div className="flex flex-wrap items-center gap-2 pt-2 border-b border-stone-150 pb-5">
                 {[
                   { id: 'all', label: lang === 'KO' ? '전체' : lang === 'JP' ? 'すべて' : 'All' },
+                  { id: 'best', label: lang === 'KO' ? '🔥 베스트' : lang === 'JP' ? '🔥 ベスト' : '🔥 Best' },
                   { id: 'ring', label: dict.menuRing },
                   { id: 'bracelet', label: dict.menuBracelet },
                   { id: 'keyring', label: dict.menuKeyring },
@@ -1022,6 +1028,12 @@ export default function App() {
                                 <RefreshCw size={11} />
                               </button>
                             )}
+                          </div>
+                        )}
+
+                        {prod.isBest && (
+                          <div className="absolute top-4 left-4 z-10 bg-amber-900/95 backdrop-blur-xs text-stone-50 font-mono text-[9px] font-semibold px-2.5 py-0.5 tracking-wider uppercase">
+                            BEST
                           </div>
                         )}
 
