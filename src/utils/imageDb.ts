@@ -61,37 +61,18 @@ export function compressImage(base64DataUrl: string, maxDimension: number = 1000
 }
 
 export function base64ToBlobUrlLocal(base64Data: string): string {
-  try {
-    if (typeof window === 'undefined') return base64Data;
-    const parts = base64Data.split(';base64,');
-    if (parts.length < 2) return base64Data;
-    const contentType = parts[0].split(':')[1] || 'image/jpeg';
-    const raw = window.atob(parts[1]);
-    const rawLength = raw.length;
-    const uInt8Array = new Uint8Array(rawLength);
-    for (let i = 0; i < rawLength; ++i) {
-      uInt8Array[i] = raw.charCodeAt(i);
-    }
-    const blob = new Blob([uInt8Array], { type: contentType });
-    return URL.createObjectURL(blob);
-  } catch (err) {
-    console.error('Failed to convert base64 to blob url:', err);
-    return base64Data;
-  }
+  // Return the base64Data directly so that it persists in state and localStorage across refreshes
+  return base64Data;
 }
 
 export function saveOverriddenImage(id: string, base64Data: string): void {
   try {
     const overrides = getOverriddenImages();
-    let targetData = base64Data;
-    if (base64Data && base64Data.startsWith('data:')) {
-      targetData = base64ToBlobUrlLocal(base64Data);
-    }
-    overrides[id] = targetData;
+    overrides[id] = base64Data;
     
     const safeOverrides: Record<string, string> = {};
     for (const key of Object.keys(overrides)) {
-      if (overrides[key] && !overrides[key].startsWith('data:')) {
+      if (overrides[key]) {
         safeOverrides[key] = overrides[key];
       }
     }
@@ -117,7 +98,7 @@ export function importOverriddenImages(dict: Record<string, string>): void {
     
     const safeOverrides: Record<string, string> = {};
     for (const key of Object.keys(overrides)) {
-      if (overrides[key] && !overrides[key].startsWith('data:')) {
+      if (overrides[key]) {
         safeOverrides[key] = overrides[key];
       }
     }
@@ -127,13 +108,24 @@ export function importOverriddenImages(dict: Record<string, string>): void {
   }
 }
 
-export function getProductImage(productId: string, defaultUrl: string): string {
+export function getProductImage(productId: string, defaultUrl: string, imageUrl?: string): string {
+  // Priority 1: If direct valid imageUrl exists from Firestore (non-base64, non-blob), prioritize it.
+  if (imageUrl && imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+  
+  // Priority 2: If defaultUrl is a cloud storage URL, return it immediately to prevent local storage/base64 cache overriding.
+  if (defaultUrl && defaultUrl.startsWith('http')) {
+    return defaultUrl;
+  }
+
   const overrides = getOverriddenImages();
   if (overrides[productId] === 'empty') {
     return 'empty';
   }
   let resolvedUrl = defaultUrl;
   if (!resolvedUrl) {
+    // Beautiful placeholder image
     resolvedUrl = 'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&q=80';
   }
   if (resolvedUrl === '/images/ring-01.svg') {

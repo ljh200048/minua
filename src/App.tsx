@@ -369,7 +369,7 @@ export default function App() {
   // Filter products by selected categories
   const filteredProducts = productsList.map(p => ({
     ...p,
-    defaultImage: getProductImage(p.id, p.defaultImage)
+    defaultImage: getProductImage(p.id, p.defaultImage, p.imageUrl)
   })).filter(p => {
     if (activeTab === 'all' || activeTab === 'home') return true;
     if (activeTab === 'best') return !!p.isBest;
@@ -704,7 +704,7 @@ export default function App() {
               {/* Grid lists */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {productsList.slice(0, 3).map((prod) => {
-                  const resolvedImg = getProductImage(prod.id, prod.defaultImage);
+                  const resolvedImg = getProductImage(prod.id, prod.defaultImage, prod.imageUrl);
                   const isWished = wishlist.includes(prod.id);
                   return (
                     <div

@@ -30,7 +30,9 @@ import {
   createProductInDb, 
   deleteProductInDb,
   saveImageOverrideInDb,
-  uploadImageToStorage
+  uploadImageToStorage,
+  uploadProductImage,
+  updateProductImageUrl
 } from '../lib/firebase';
 
 interface AdminDashboardProps {
@@ -161,19 +163,8 @@ export default function AdminDashboard({
     setImageUploading(isNewProduct ? 'new' : targetProdId);
     
     try {
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const rawBase64 = await base64Promise;
-      
-      // Auto-compress base64 to target safe specifications (JPEG quality 0.75, width <= 800)
-      const compressed = await compressImage(rawBase64, 800);
-      
-      // Direct Storage upload (falls back to a lightweight, safe localized Blob ObjURL in offline/demo mode)
-      const finalUrl = await uploadImageToStorage(targetProdId, compressed);
+      // Direct Storage upload of the File object (falls back to a lightweight, safe preview Blob Object URL in offline/demo mode)
+      const finalUrl = await uploadProductImage(targetProdId, file);
       
       if (isNewProduct) {
         setNewProduct(prev => ({

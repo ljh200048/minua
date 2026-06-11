@@ -322,7 +322,7 @@ export default function AestheticHome({
           {/* Right columns: Horizontal list of three verified product cards */}
           <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6">
             {productsList.filter(p => ['earring-01', 'sculpt-01', 'necklace-01'].includes(p.id)).map((prod) => {
-              const resolvedImg = getProductImage(prod.id, prod.defaultImage);
+              const resolvedImg = getProductImage(prod.id, prod.defaultImage, prod.imageUrl);
               const isWished = wishlist.includes(prod.id);
               return (
                 <div

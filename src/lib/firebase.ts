@@ -32,7 +32,8 @@ import {
   getStorage,
   ref as storageRefFunc,
   uploadString,
-  getDownloadURL
+  getDownloadURL,
+  uploadBytes
 } from 'firebase/storage';
 import firebaseConfig from './firebase-applet-config.json';
 
@@ -303,23 +304,8 @@ let localProductsCache: Product[] | null = null;
  * This completely avoids storing massive base64 payloads inside products state and local storage.
  */
 export function base64ToBlobUrl(base64Data: string): string {
-  try {
-    if (typeof window === 'undefined') return base64Data;
-    const parts = base64Data.split(';base64,');
-    if (parts.length < 2) return base64Data;
-    const contentType = parts[0].split(':')[1] || 'image/jpeg';
-    const raw = window.atob(parts[1]);
-    const rawLength = raw.length;
-    const uInt8Array = new Uint8Array(rawLength);
-    for (let i = 0; i < rawLength; ++i) {
-      uInt8Array[i] = raw.charCodeAt(i);
-    }
-    const blob = new Blob([uInt8Array], { type: contentType });
-    return URL.createObjectURL(blob);
-  } catch (err) {
-    console.error('Failed to convert base64 to blob url:', err);
-    return base64Data;
-  }
+  // Return the base64Data directly so that it persists in state and localStorage across refreshes
+  return base64Data;
 }
 
 /**
@@ -328,7 +314,7 @@ export function base64ToBlobUrl(base64Data: string): string {
  */
 export async function uploadImageToStorage(productId: string, base64DataUrl: string): Promise<string> {
   if (!isFirebaseConfigured() || !storageInstance) {
-    return base64ToBlobUrl(base64DataUrl);
+    return base64DataUrl;
   }
   
   try {
@@ -347,36 +333,70 @@ export async function uploadImageToStorage(productId: string, base64DataUrl: str
   }
 }
 
+/**
+ * 2. uploadProductImage 함수:
+ * 선택한 이미지 파일(File)을 Firebase Storage에 직접 업로드하고 getDownloadURL 이미지 URL을 가져옵니다.
+ */
+export async function uploadProductImage(productId: string, file: File): Promise<string> {
+  const cleanId = (productId || 'new_product').replace(/[^a-zA-Z0-9_\\-]+/g, '_');
+  if (!isFirebaseConfigured() || !storageInstance) {
+    // Local fallback: create a preview Blob URL for immediate use in local demomode.
+    console.warn('Real Firebase is not configured. Falling back to preview object-URL.');
+    return URL.createObjectURL(file);
+  }
+  
+  try {
+    const extension = file.name.split('.').pop() || 'jpg';
+    const filePath = `products/${cleanId}_${Date.now()}.${extension}`;
+    const fileRef = storageRefFunc(storageInstance, filePath);
+    
+    await uploadBytes(fileRef, file);
+    const downloadUrl = await getDownloadURL(fileRef);
+    return downloadUrl;
+  } catch (err) {
+    console.error('Firebase Storage uploadProductImage failed:', err);
+    throw err;
+  }
+}
+
+/**
+ * 3. updateProductImageUrl 함수:
+ * Firestore의 해당 상품 문서에 imageUrl 필드를 업데이트합니다.
+ */
+export async function updateProductImageUrl(productId: string, imageUrl: string): Promise<void> {
+  const docPath = `products/${productId}`;
+  if (!isFirebaseConfigured() || !dbInstance) {
+    // Local fallback support: Mock updating local cache representation
+    if (localProductsCache) {
+      const idx = localProductsCache.findIndex(p => p.id === productId);
+      if (idx >= 0) {
+        localProductsCache[idx].imageUrl = imageUrl;
+        localProductsCache[idx].defaultImage = imageUrl;
+        saveLocalProducts(localProductsCache);
+      }
+    }
+    return;
+  }
+  
+  try {
+    const docRef = doc(dbInstance, 'products', productId);
+    await updateDoc(docRef, {
+      imageUrl: imageUrl,
+      defaultImage: imageUrl,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, docPath);
+  }
+}
+
 // Initialize products from local storage if in demo mode
 function getLocalProducts(initialList: Product[]): Product[] {
   if (!localProductsCache) {
     const stored = localStorage.getItem('minua_firestore_fallback_products');
     if (stored) {
       try {
-        const parsed = JSON.parse(stored);
-        let hasBase64 = false;
-        
-        // Clean out any previously bloated base64 strings to dynamically reclaim browser storage space
-        const sanitized = parsed.map((p: any) => {
-          if (p.defaultImage && p.defaultImage.startsWith('data:')) {
-            hasBase64 = true;
-            return {
-              ...p,
-              defaultImage: base64ToBlobUrl(p.defaultImage)
-            };
-          }
-          return p;
-        });
-
-        if (hasBase64) {
-          try {
-            localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(sanitized));
-          } catch (e) {
-            console.warn('Quota warning while cleaning up cache, purging fallback store');
-            localStorage.removeItem('minua_firestore_fallback_products');
-          }
-        }
-        localProductsCache = sanitized;
+        localProductsCache = JSON.parse(stored);
       } catch {
         localProductsCache = [...initialList];
       }
@@ -388,21 +408,10 @@ function getLocalProducts(initialList: Product[]): Product[] {
 }
 
 function saveLocalProducts(products: Product[]) {
-  // Translate any base64 fields of stored products into lightweight ObjURLs before saving to local storage
-  const sanitized = products.map((p: any) => {
-    if (p.defaultImage && p.defaultImage.startsWith('data:')) {
-      return {
-        ...p,
-        defaultImage: base64ToBlobUrl(p.defaultImage)
-      };
-    }
-    return p;
-  });
-
-  localProductsCache = sanitized;
+  localProductsCache = products;
 
   try {
-    localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(sanitized));
+    localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(products));
   } catch (err) {
     console.error('Initial fallback save failed. Attempting automatic quota cleanup...', err);
     if (err instanceof DOMException && (err.name === 'QuotaExceededError' || err.code === 22)) {
@@ -411,8 +420,9 @@ function saveLocalProducts(products: Product[]) {
       localStorage.removeItem('minua_image_overrides');
       try {
         // Strip image urls entirely from objects as absolute fallback so product texts are preserved safely
-        const textOnlyProducts = sanitized.map(p => ({ ...p, defaultImage: '' }));
+        const textOnlyProducts = products.map(p => ({ ...p, defaultImage: '' }));
         localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(textOnlyProducts));
+        localProductsCache = textOnlyProducts;
         console.log('Successfully saved text-only product configurations after quota clearance.');
       } catch (retryErr) {
         console.error('Could not write to localStorage fallback even after extreme quota clearance:', retryErr);
