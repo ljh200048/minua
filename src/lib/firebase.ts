@@ -620,6 +620,19 @@ export async function saveImageOverrideInDb(id: string, base64Data: string, desc
         console.error('Failed to delete image override from Firestore:', err);
       }
     }
+    // Handle offline local storage clearance
+    try {
+      const stored = localStorage.getItem('minua_firestore_fallback_image_overrides');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed[id]) {
+          delete parsed[id];
+          localStorage.setItem('minua_firestore_fallback_image_overrides', JSON.stringify(parsed));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to delete local fallback image override:', e);
+    }
     return '';
   }
 
@@ -632,6 +645,19 @@ export async function saveImageOverrideInDb(id: string, base64Data: string, desc
     } catch (uploadErr) {
       console.error('Failed to upload custom override to Firebase Storage:', uploadErr);
     }
+  }
+
+  // Backup to client-side localStorage to survive F5 refreshes in demo/unconfigured mode
+  try {
+    const stored = localStorage.getItem('minua_firestore_fallback_image_overrides');
+    const parsed = stored ? JSON.parse(stored) : {};
+    parsed[id] = {
+      base64Data: finalUrl,
+      description: description !== undefined ? description : (parsed[id]?.description ?? '')
+    };
+    localStorage.setItem('minua_firestore_fallback_image_overrides', JSON.stringify(parsed));
+  } catch (e) {
+    console.warn('Failed to write to local fallback image override storage:', e);
   }
 
   if (!isFirebaseConfigured() || !dbInstance) {
@@ -672,6 +698,26 @@ export async function fetchAllImageOverridesFromDb(): Promise<{
   const images: Record<string, string> = {};
   const descriptions: Record<string, string> = {};
   
+  // Seed initial values from local storage cache to support complete offline/F5 survivability
+  try {
+    const stored = localStorage.getItem('minua_firestore_fallback_image_overrides');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      Object.entries(parsed).forEach(([key, val]: [string, any]) => {
+        if (val) {
+          if (val.base64Data) {
+            images[key] = val.base64Data;
+          }
+          if (val.description !== undefined) {
+            descriptions[key] = val.description;
+          }
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Failed to load image overrides from local fallback storage:', e);
+  }
+
   if (!isFirebaseConfigured() || !dbInstance) {
     return { images, descriptions };
   }

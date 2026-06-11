@@ -75,8 +75,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const isAdminAuthenticated = adminUser && adminUser.email === 'lch200048@gmail.com';
-
   React.useEffect(() => {
     async function getSyncedData() {
       try {
@@ -201,6 +199,11 @@ export default function App() {
     const saved = localStorage.getItem('minua_user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const isAdminAuthenticated = !!(
+    (adminUser && adminUser.email === 'lch200048@gmail.com') ||
+    (loggedInUser && loggedInUser.email === 'lch200048@gmail.com')
+  );
 
   // Active modulations
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
@@ -1113,7 +1116,7 @@ export default function App() {
       </main>
 
       {/* Elegant Footer Details */}
-      <Footer currentLang={lang} onNavigateToAdmin={navigateToAdmin} />
+      <Footer currentLang={lang} onNavigateToAdmin={isAdminAuthenticated ? navigateToAdmin : undefined} />
 
       {/* RENDER MODAL: DETAILED PRODUCT FEATURES VIEW */}
       {selectedProduct && (
