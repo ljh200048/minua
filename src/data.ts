@@ -12,9 +12,9 @@ export const INITIAL_PRODUCTS: Product[] = [
     nameEN: 'Silhouette Wave Silver Ring',
     price: 38000,
     category: 'ring',
-    descriptionKO: '손가락을 부드럽게 감싸는 미세한 유선형 웨이브가 일상에 잔잔한 무드를 선사하는 실버 925 반지입니다. 심플하면서도 우아한 감성 디자인.',
-    descriptionEN: 'A 925 sterling silver ring featuring a gentle organic wave that wraps around your finger, offering a subtle mood to your everyday look.',
-    defaultImage: '/images/ring-01.svg',
+    descriptionKO: '손가락을 부드럽게 감싸는 유기적인 유선형의 은빛 웨이브가 일상에 시적인 무드를 선사하는 실버 925 반지입니다. 자연스럽게 허물어진 크래프트 무드.',
+    descriptionEN: 'A sterling 925 silver ring featuring a gentle organic flowing wave that gracefully loops around your finger, offering a poetic mood to your everyday style.',
+    defaultImage: '/images/silhouette-wave-silver-ring.jpg',
     materialKO: '실버 925 (Sterling Silver)',
     materialEN: '925 Sterling Silver',
     options: {
@@ -25,13 +25,13 @@ export const INITIAL_PRODUCTS: Product[] = [
   },
   {
     id: 'ring-02',
-    nameKO: '미니멀 솔리드 하프 밴드',
-    nameEN: 'Minimal Solid Half Band',
+    nameKO: '미니멀 솔리드 하프 실버 밴드',
+    nameEN: 'Minimal Solid Half Silver Band',
     price: 42000,
     category: 'ring',
-    descriptionKO: '정교하게 폴리싱된 플랫한 표면과 묵직한 두께감이 조화를 이루어, 단독 착용은 물론 가이드 링과도 완벽히 레이어링되는 중성적 무드의 밴드.',
-    descriptionEN: 'A high-polished flat flat flat band with moderate weight, perfectly designed for standalone styling or stacking with guide rings.',
-    defaultImage: '/images/ring-02.svg',
+    descriptionKO: '정교하게 다듬어진 편평한 실버 표면과 묵직한 볼륨감이 균형을 이루어, 단독 착용은 물론 빈티지 가이드 링들과 레이어하기 이상적인 은반지.',
+    descriptionEN: 'A high-polished flat silver band with solid rustic weight, beautifully crafted for stacks or standalone presence.',
+    defaultImage: 'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=800&q=80',
     materialKO: '실버 925 (Sterling Silver)',
     materialEN: '925 Sterling Silver',
     options: {
@@ -42,13 +42,13 @@ export const INITIAL_PRODUCTS: Product[] = [
   },
   {
     id: 'bracelet-01',
-    nameKO: '드로잉 체인 토글 바 팔찌',
-    nameEN: 'Drawing Chain Toggle Bar Bracelet',
+    nameKO: '청키 실버 링크 메달 팔찌',
+    nameEN: 'Chunky Silver Link Medallion Bracelet',
     price: 54000,
     category: 'bracelet',
-    descriptionKO: '손으로 그린 듯 자연스러운 형태의 라운드 루프 링크와 시그니처 토글 바 잠금 장치가 조화를 이룬 타임리스 리플렉션 팔찌입니다.',
-    descriptionEN: 'A timeless reflection bracelet combining organic draft-round loop links with a signature toggle bar closure.',
-    defaultImage: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800&auto=format&fit=crop&q=80',
+    descriptionKO: '업로드해주신 사진 속 스타일처럼, 대담하게 엮인 실버 볼드 페이퍼클립 링크들에 클래식한 은색 각인 펜던트 팬던트가 우아하게 매달려 흔들리는 유니크 카라비너 팔찌입니다.',
+    descriptionEN: 'An elegant chunky silver link bracelet displaying a textured paperclip link chain with a custom engraved circular Italian silver coin medallion tag, as featured in your style inspiration.',
+    defaultImage: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=1000&q=80',
     materialKO: '실버 925 (Sterling Silver)',
     materialEN: '925 Sterling Silver',
     options: {
@@ -59,13 +59,13 @@ export const INITIAL_PRODUCTS: Product[] = [
   },
   {
     id: 'bracelet-02',
-    nameKO: '슬림 플랫 위치 뱀줄 팔찌',
-    nameEN: 'Slim Flat Snake Chain Bracelet',
+    nameKO: '듀오 레이어드 실버 실크 팔찌',
+    nameEN: 'Duo Layered Silver Silk Bracelet',
     price: 46000,
     category: 'bracelet',
-    descriptionKO: '피부에 주르륵 부드럽게 흐르며 메탈 본연의 반사광을 극대화하는 슬림 플랫 스네이크 체인 팔찌입니다. 데일리 레이어링 강력 추천.',
-    descriptionEN: 'A liquid-like flat snake chain bracelet that flows smoothly on your skin, maximizing the natural metallic luster.',
-    defaultImage: 'https://images.unsplash.com/photo-1630019852942-f89202989a59?w=800&auto=format&fit=crop&q=80',
+    descriptionKO: '나뭇잎의 온화한 햇빛 그림자가 깃든 피부 위에, 흐르듯 감기는 극도로 가늘고 섬세한 두 줄의 미니멀 은 실크 루프체인이 찬란한 대조를 선사하는 감성 디자인.',
+    descriptionEN: 'An exquisite double-strand minimalist silver link chain bracelet capturing plant shadow reflection on warm skin. Elegantly light and fluidly styled.',
+    defaultImage: 'https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?w=1000&q=80',
     materialKO: '실버 925 (Sterling Silver)',
     materialEN: '925 Sterling Silver',
     options: {
@@ -76,13 +76,13 @@ export const INITIAL_PRODUCTS: Product[] = [
   },
   {
     id: 'keyring-01',
-    nameKO: 'MINUA signature minua 커스텀 키링',
-    nameEN: 'MINUA Signature minua Custom Keyring',
+    nameKO: 'MINUA 시그니처 레더 플레이트 키링',
+    nameEN: 'MINUA Signature Leather Plate Keyring',
     price: 32000,
     category: 'keyring',
-    descriptionKO: '미누아의 오리지널 "minua (미누아)" 커스텀 키링 모듈입니다. 나만의 기억, 영감, 그리고 패브릭 슬링이나 키 카드를 다양하게 엮으실 수 있습니다.',
-    descriptionEN: 'MINUA`s original "minua (modular)" custom keyring module. Attach your daily inspirations, charms, and airpods smoothly.',
-    defaultImage: '/images/keyring-01.svg',
+    descriptionKO: '엄선된 이탈리안 베지터블 레더 스트랩에 "MINUA" 불박 프레스 각인, 그리고 원형 각인 팬던트와 엔티크한 도금 패드락 자물쇠가 조화를 이룬 클래식 헤어룸 키링 모듈.',
+    descriptionEN: 'MINUA`s premier vegetable-tanned leather loops paired with a custom-engraved silver disk tag reading "Attach Your Daily Moments. MINUA", finished with a companion silver padlock and brass key.',
+    defaultImage: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=1200&q=80',
     materialKO: '스틸 & 이탈리안 베지터블 레더 (Steel & Italian Veg Leather)',
     materialEN: 'Steel & Italian Vegetable Tanned Leather',
     options: {
@@ -124,6 +124,58 @@ export const INITIAL_PRODUCTS: Product[] = [
       colors: ['Silver Duet', 'Silver-Gold Duet (+₩5,000)'],
       hasEngraving: true
     }
+  },
+  {
+    id: 'earring-01',
+    nameKO: '모던 실버 로프 오가닉 이어링',
+    nameEN: 'Modern Silver Rope Organic Earrings',
+    price: 18000,
+    category: 'earring',
+    descriptionKO: '나뭇잎 햇살 그림자 아래 자연스러운 실버 925 특유의 흐르듯 부드러운 오가닉 실루엣이 페이스 라인을 따스하게 감싸 안는 주얼리 귀걸이.',
+    descriptionEN: 'Charming organic silver loops catching leafy shadows under natural sunlight, capturing a raw sculpted frame designed for refined elegance.',
+    defaultImage: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=1000&q=80',
+    materialKO: '실버 925 (Sterling Silver)',
+    materialEN: '925 Sterling Silver',
+    options: {
+      sizes: ['Free Size'],
+      colors: ['Pure Silver 925', '18K Vermeil Gold (+₩4,000)'],
+      hasEngraving: false
+    }
+  },
+  {
+    id: 'sculpt-01',
+    nameKO: '조각난 파편 실버 링',
+    nameEN: 'Culptured Fragments Silver Ring',
+    price: 27000,
+    originalPrice: 30000,
+    category: 'ring',
+    descriptionKO: '어두운 숲속 여정에서 조각난 강인한 의지의 파편들을 형상화한 거칠면서도 따뜻한 소형 텍스처 은빛 수공예 반지.',
+    descriptionEN: 'A rustic hand-carved textured sterling silver ring embodying fragments of quiet courage and inner strength found in nature.',
+    defaultImage: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&q=80',
+    materialKO: '실버 925 위 플래티넘 도금 (925 Silver, Platinum-Plated)',
+    materialEN: '925 Sterling Silver, Platinum Plated',
+    options: {
+      sizes: ['9호', '11호', '13호', '15호', '17호'],
+      colors: ['Pure Sterling Silver', 'Vermeil Gold (+₩5,000)'],
+      hasEngraving: true
+    }
+  },
+  {
+    id: 'necklace-01',
+    nameKO: '실버 아카이브 메달 체인 목걸이',
+    nameEN: 'Silver Archive Medallion Chain Necklace',
+    price: 62000,
+    category: 'necklace',
+    descriptionKO: '원형 실버 메달 펜던트와 앤티크하게 연마된 실버 체인의 실루엣 조합이 피부 위에 잔잔하고 단단한 깊이를 더해주는 은목걸이입니다.',
+    descriptionEN: 'A captivating sterling silver medallion necklace displaying clean classic link chains holding a custom round silver-brushed disk tag for everyday style companion.',
+    defaultImage: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=1000&q=80',
+    materialKO: '실버 925 (Sterling Silver)',
+    materialEN: '925 Sterling Silver',
+    options: {
+      sizes: ['42cm', '45cm (+₩3,000)', '50cm (+₩6,000)'],
+      colors: ['Pure Sterling Silver', '18K Vermeil Gold (+₩6,000)'],
+      hasEngraving: false
+    }
   }
 ];
 
@@ -154,6 +206,191 @@ export const INITIAL_REVIEWS: Review[] = [
     rating: 5,
     content: 'The "minua" custom detail concept is brilliant! I attached my vintage apartment key and a personal picture plate. Leather smell is gorgeous and looks super premium.',
     createdAt: '2026-06-05'
+  },
+  {
+    id: 'rev-4',
+    productId: 'ring-02',
+    productName: '미니멀 솔리드 하프 실버 밴드',
+    author: '한*현',
+    rating: 5,
+    content: '묵직하고 단단한 무게감이 마음에 듭니다. 표면 광택이 고급스럽고 다른 링들과 레이어링하기에 이만한 기본 아이템이 없네요. 유행 안 타고 영원히 낄 수 있을 것 같아요.',
+    createdAt: '2026-06-06'
+  },
+  {
+    id: 'rev-5',
+    productId: 'bracelet-01',
+    productName: '청키 실버 링크 메달 팔찌',
+    author: '최*영',
+    rating: 5,
+    content: '여름에 반소매 입고 차기에 딱 존재감 있는 볼드한 팔찌입니다. 각인 들어간 펜던트가 걸을 때마다 살짝씩 흔들리는 게 엄청 감각적이에요. 친구들이 다 어디서 샀냐고 물어보네요.',
+    createdAt: '2026-06-07'
+  },
+  {
+    id: 'rev-6',
+    productId: 'bracelet-02',
+    productName: '듀오 레이어드 실버 실크 팔찌',
+    author: '정*윤',
+    rating: 5,
+    content: '엄청 얇고 여리여리한 실체인인데, 두 줄이라 심심하지 않고 햇빛 받을 때 반짝반짝 빛나는 느낌이 대박이에요. 데일리로 매일 착용하고 자는데 걸림도 전혀 없고 편안합니다.',
+    createdAt: '2026-06-08'
+  },
+  {
+    id: 'rev-7',
+    productId: 'keyring-02',
+    productName: 'minua 매듭 서클 커넥터',
+    author: '박*하',
+    rating: 4,
+    content: '에어팟 케이스에 걸어서 쓰려고 구매했습니다. 천연 가죽 마감이 확실히 부드러워서 만질 때 가죽 질감이 참 마음에 드네요. 마감 퀄리티 최상입니다.',
+    createdAt: '2026-06-09'
+  },
+  {
+    id: 'rev-8',
+    productId: 'earring-01',
+    productName: '모던 실버 로프 오가닉 이어링',
+    author: '윤*진',
+    rating: 5,
+    content: '자연스러운 꼬임 셰입이 가공되지 않은 고급스러운 분위기를 주네요. 무게도 전혀 무겁지 않아서 하루 종일 착용해도 귀가 전혀 아프지 않습니다. 소장가치 백퍼센트!',
+    createdAt: '2026-06-10'
+  },
+  {
+    id: 'rev-9',
+    productId: 'sculpt-01',
+    productName: '조각난 파편 실버 링',
+    author: '임*원',
+    rating: 5,
+    content: '표면 질감이 거친 불규칙한 매력이 있어요. 손으로 한 땀 한 땀 조각한 느낌이 고스란히 느껴져 크래프트 감성 좋아하시는 분들이라면 꼭 사시길 조심스레 추천드립니다.',
+    createdAt: '2026-06-10'
+  },
+  {
+    id: 'rev-10',
+    productId: 'necklace-01',
+    productName: '실버 아카이브 메달 체인 목걸이',
+    author: 'Emily M.',
+    rating: 5,
+    content: 'Absolutely beautiful coin necklace. It sits perfectly on my collarbone and has a nice antique, vintage finish. Delivery was incredibly fast for a custom craftsmanship work!',
+    createdAt: '2026-06-11'
+  },
+  {
+    id: 'rev-11',
+    productId: 'ring-01',
+    productName: '실루엣 웨이브 실버 반지',
+    author: '신*호',
+    rating: 5,
+    content: '여자친구 선물로 웨이브 링 구매했는데 굴곡이 유려해서 너무 마음에 들어합니다. 클래식한 미누아 포장 상자에 예쁜 카드도 동봉되어 감동이 배가 되었네요. 번창하세요!',
+    createdAt: '2026-06-11'
+  },
+  {
+    id: 'rev-12',
+    productId: 'gift-01',
+    productName: '미누아 커플 리플렉트 링 세트',
+    author: '강*지',
+    rating: 5,
+    content: '남친이랑 2주년 기념으로 맞춘 영롱한 커플링 세트! 포장 풀 때부터 실크 리본 장식이며 향나무 오일 묻어나는 프리미엄 향이 정말 고급스러워서 뜯기 아까울 정도였어요. 강추 드려요.',
+    createdAt: '2026-06-11'
+  },
+  {
+    id: 'rev-13',
+    productId: 'keyring-01',
+    productName: 'MINUA 시그니처 레더 플레이트 키링',
+    author: '유*호',
+    rating: 5,
+    content: '자동차 키에 장착했는데 가죽 색감(새들 브라운)이 차 인테리어와 아주 무드있게 조화롭네요. 자물쇠 장식과 각인판 금속 디테일 또한 매력적입니다.',
+    createdAt: '2026-06-11'
+  },
+  {
+    id: 'rev-14',
+    productId: 'ring-01',
+    productName: '실루엣 웨이브 실버 반지',
+    author: '정*은',
+    rating: 5,
+    content: '손가락을 길고 여리여리하게 보이게 해주는 곡선이 예술이네요! 매끄럽게 흐르는 무드가 마음에 들어서 항상 끼고 다니고 있어요. 포장 열자마자 퍼지는 고급 우디향 덕분에 첫인상부터 완벽했습니다.',
+    createdAt: '2026-06-11',
+    image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&q=80'
+  },
+  {
+    id: 'rev-15',
+    productId: 'bracelet-01',
+    productName: '청키 실버 링크 메달 팔찌',
+    author: '이*진',
+    rating: 5,
+    content: '체인이 투박하지 않고 정교하게 컷팅되어서 반사광이 진짜 번쩍여요! 메달 펜던트에 한 제 이니셜 각인체도 세련되고 볼드한 감성을 더 돋보이게 해줍니다. 매우 대만족!',
+    createdAt: '2026-06-11',
+    image: 'https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=600&q=80'
+  },
+  {
+    id: 'rev-16',
+    productId: 'earring-01',
+    productName: '모던 실버 로프 오가닉 이어링',
+    author: '송*서',
+    rating: 5,
+    content: '귓불에 밀착되는 볼륨감이 우아하고 빈티지해요. 니트나 실크 블라우스에 매치해도 자연스러운 크래프트 느낌이 살아서 룩 전체가 한층 지적이게 변합니다!!',
+    createdAt: '2026-06-11',
+    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80'
+  },
+  {
+    id: 'rev-17',
+    productId: 'sculpt-01',
+    productName: '조각난 파편 실버 링',
+    author: '박*우',
+    rating: 5,
+    content: '일정하지 않은 파편 모양과 빈티지한 음영 처리가 남다릅니다. 투박해보이면서도 시크한 멋이 있어서 제 검지 반지로 독보적인 주임을 하고 있어요. 흔치 않은 디자이너 감성이네요.',
+    createdAt: '2026-06-11',
+    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&q=80'
+  },
+  {
+    id: 'rev-18',
+    productId: 'ring-02',
+    productName: '미니멀 솔리드 하프 실버 밴드',
+    author: '서*윤',
+    rating: 5,
+    content: '심플하게 툭 걸쳐도 세련된 연출이 가능한 시그니처 미니멀 밴드입니다. 깔끔하면서 묵직한 중량감이 아주 호화롭네요.',
+    createdAt: '2026-06-10',
+    image: 'https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=600&q=80'
+  },
+  {
+    id: 'rev-19',
+    productId: 'necklace-01',
+    productName: '실버 아카이브 메달 체인 목걸이',
+    author: '임*태',
+    rating: 5,
+    content: '체인의 묵직함과 아치 속의 펜던트 조화가 극치에 가깝습니다. 실버 수공예의 진수를 보여주는 기분이라 소장하고만 있어도 기분이 황홀하네요. 오래 길들여 멋스럽게 차고 싶어요.',
+    createdAt: '2026-06-10'
+  },
+  {
+    id: 'rev-20',
+    productId: 'bracelet-02',
+    productName: '듀오 레이어드 실버 실크 팔찌',
+    author: '조*아',
+    rating: 4,
+    content: '한 듯 안 한 듯 가볍지만 바람이나 움직임에 의해 두 줄 체인이 살짝 교차하며 뿜는 영롱함이 이 세상 고급짐이 아닙니다. 선물용으로 추가 주문 진행 예정이에요!!',
+    createdAt: '2026-06-09'
+  },
+  {
+    id: 'rev-21',
+    productId: 'keyring-02',
+    productName: 'minua 매듭 서클 커넥터',
+    author: '배*수',
+    rating: 5,
+    content: '에이어스 키링으로 완전 어울리네요. 마감 봉제선이 한 땀 한 땀 우수한 명품 퀄리티입니다. 차 키랑 매칭해서 사용하고 있는데 정말 패셔너블해보입니다.',
+    createdAt: '2026-06-09'
+  },
+  {
+    id: 'rev-22',
+    productId: 'gift-01',
+    productName: '미누아 커플 리플렉트 링 세트',
+    author: '남궁*현',
+    rating: 5,
+    content: '결혼 기념일 전 선물로 맞춤했는데 남편도 귀금속 답답해하는 편인데 이 반지는 걸리는 느낌 없이 동글동글 피팅감이 완벽하다고 정말 좋아합니다. 수작업 마감이 정말 다릅니다.',
+    createdAt: '2026-06-08'
+  },
+  {
+    id: 'rev-23',
+    productId: 'ring-01',
+    productName: '실루엣 웨이브 실버 반지',
+    author: '장*은',
+    rating: 5,
+    content: '미누아 제품은 언제나 믿고 삽니다. 곡선의 형태가 오가닉하면서도 모던해서 매치하기 엄청 수월해요. 친절한 각인 서비스도 매력 포인트이네요.',
+    createdAt: '2026-06-07'
   }
 ];
 
@@ -166,6 +403,8 @@ export const DICTIONARY = {
     menuHome: '홈',
     menuRing: '반지',
     menuBracelet: '팔찌',
+    menuEarring: '귀걸이',
+    menuNecklace: '목걸이',
     menuKeyring: '키링',
     menuGift: '커플 / 선물',
     menuAttStory: 'minua 스토리',
@@ -266,6 +505,8 @@ export const DICTIONARY = {
     menuHome: 'Home',
     menuRing: 'Rings',
     menuBracelet: 'Bracelets',
+    menuEarring: 'Earrings',
+    menuNecklace: 'Necklaces',
     menuKeyring: 'Keyrings',
     menuGift: 'Couple & Gift',
     menuAttStory: 'minua Story',
@@ -366,6 +607,8 @@ export const DICTIONARY = {
     menuHome: 'ホーム',
     menuRing: 'リング',
     menuBracelet: 'ブレスレット',
+    menuEarring: 'イヤリング',
+    menuNecklace: 'ネックレス',
     menuKeyring: 'キーリング',
     menuGift: 'ペア / ギフト',
     menuAttStory: 'minuaストーリー',

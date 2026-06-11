@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import { Mail, ShieldCheck, MapPin } from 'lucide-react';
 import { DICTIONARY } from '../data';
 
 interface FooterProps {
@@ -15,66 +14,74 @@ interface FooterProps {
 export default function Footer({ currentLang, onNavigateToAdmin }: FooterProps) {
   const dict = DICTIONARY[currentLang];
 
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <footer className="bg-stone-950 text-stone-300 py-16 border-t border-stone-900 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer className="bg-white text-stone-600 py-16 border-t border-neutral-150 font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
-        {/* Top grid summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-b border-stone-850 pb-12 mb-10 text-stone-400">
-          
-          {/* Brand story column */}
-          <div className="space-y-4">
-            <h4 className="text-stone-100 text-sm font-semibold tracking-widest font-sans uppercase">
-              MINUA CRAFTS ATELIER
-            </h4>
-            <p className="text-xs font-light leading-relaxed max-w-sm text-stone-500">
-              {currentLang === 'KO' 
-                ? '미누아는 매일 착용하기 좋은 감성 주얼리를 만듭니다. 반지와 팔찌에 각자의 따뜻한 감동과 취향을 조각해 나가세요.' 
-                : 'MINUA represents standard high-end delicate jewelry forged for everyday nomads. Imprint your special memories on customized metallic rings and chains.'}
-            </p>
+        {/* Business details - exactly mirroring screenshot-4 */}
+        <div className="text-stone-500 font-sans space-y-2 text-xs sm:text-[13px] tracking-wide leading-relaxed text-center sm:text-left">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1">
+            <span>company: <strong className="text-neutral-800 font-medium">minua</strong></span>
+            <span className="text-neutral-300">/</span>
+            <span>owner: <strong className="text-neutral-800 font-medium">gildong Hong</strong></span>
+            <span className="text-neutral-300">/</span>
+            <span>phonnumber: <strong className="text-neutral-800 font-medium">010-1234-5678</strong></span>
+            <span className="text-neutral-300">/</span>
+            <span>office: <span className="text-neutral-700">111,11, Toegye-ro 11-gil, Jung-gu, Seoul, Republic of Korea</span></span>
           </div>
 
-          {/* Quick policies */}
-          <div className="space-y-4">
-            <h4 className="text-stone-100 text-sm font-semibold tracking-widest font-sans uppercase">
-              {currentLang === 'KO' ? '고객 케어 지원' : 'Customer Devotions'}
-            </h4>
-            <ul className="text-xs space-y-2.5 font-light text-stone-500">
-              <li className="flex items-center gap-2">
-                <MapPin size={12} className="text-amber-600" />
-                <span>{currentLang === 'KO' ? '주문 후 개별 수제 마감 과정' : '1:1 Custom Manual Forging Process'}</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <ShieldCheck size={12} className="text-amber-600" />
-                <span>{currentLang === 'KO' ? '실버 925 알레르기 안심 소재' : 'Hypoallergenic 925 Sterling Gold-plated'}</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail size={12} className="text-amber-600" />
-                <span>CS: minua_jewelry@gmail.com</span>
-              </li>
-            </ul>
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1 border-t border-neutral-100 pt-2">
+            <span>business license : <span className="text-neutral-700">123-45-6789</span></span>
+            <span className="text-neutral-300">/</span>
+            <span>mail: <a href="mailto:minua@gmail.com" className="text-neutral-700 underline hover:text-amber-800">minua@gmail.com</a></span>
           </div>
 
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1 border-t border-neutral-100 pt-2">
+            <span>cpo: <span className="text-neutral-700">gildong Lee (minua@gmail.com)</span></span>
+            <span className="text-neutral-300">/</span>
+            <span>hosting provider : <span className="text-neutral-700">lnc.imweb</span></span>
+          </div>
         </div>
 
-        {/* Bottom copyright metadata details */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-[10.5px] leading-relaxed text-stone-600">
-          <div className="max-w-xl">
-            <p>{dict.footerBizInfo}</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 items-center mt-2.5">
-              {onNavigateToAdmin && (
-                <button
-                  onClick={onNavigateToAdmin}
-                  className="text-stone-450 hover:text-amber-550 transition-colors underline underline-offset-2 cursor-pointer font-sans block"
-                >
-                  {currentLang === 'KO' ? '🔒 본사 어드민 관리 센터 (/admin)' : '🔒 Manager Control Center (/admin)'}
-                </button>
-              )}
-            </div>
+        {/* Bottom Section: Arched minua logo & arrow & admin trigger */}
+        <div className="border-t border-neutral-100 pt-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+          
+          {/* Admin center */}
+          <div className="text-xs text-neutral-400">
+            {onNavigateToAdmin ? (
+              <button
+                onClick={onNavigateToAdmin}
+                className="hover:text-amber-800 transition-colors underline underline-offset-4 cursor-pointer font-sans"
+              >
+                {currentLang === 'KO' ? '🔒 관리 센터' : '🔒 Admin'}
+              </button>
+            ) : (
+              <span>© minua. All rights reserved.</span>
+            )}
           </div>
-          <p className="font-mono text-stone-700">
-            © 2026 MINUA Atelier Corp. All rights reserved. Registered in Seoul.
-          </p>
+
+          {/* Centered arched logo */}
+          <div className="relative py-2 px-5 select-none scale-90">
+            <div className="absolute top-0 left-0 right-0 h-3 border-t border-neutral-300 rounded-[100%_100%_0_0] scale-x-110 opacity-60" />
+            <span className="font-serif text-lg tracking-widest text-neutral-800 lowercase block text-center">
+              minua
+            </span>
+          </div>
+
+          {/* Elegant Scroll to Top action */}
+          <button
+            onClick={handleScrollToTop}
+            className="flex items-center space-x-1 text-[11px] font-mono uppercase tracking-widest text-stone-400 hover:text-neutral-800 transition-colors focus:outline-hidden cursor-pointer"
+            title="Scroll to Top"
+          >
+            <span>Top</span>
+            <span>↑</span>
+          </button>
+
         </div>
 
       </div>

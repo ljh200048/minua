@@ -33,10 +33,11 @@ service cloud.firestore {
       return prod.id is string && prod.id.size() <= 128 &&
              prod.nameKO is string && prod.nameKO.size() <= 200 &&
              prod.nameEN is string && prod.nameEN.size() <= 200 &&
-             prod.nameJP is string && prod.nameJP.size() <= 200 &&
+             (!('nameJP' in prod) || (prod.nameJP is string && prod.nameJP.size() <= 200)) &&
              prod.category is string && prod.category.size() <= 100 &&
              prod.price is number && prod.price >= 0 &&
-             prod.defaultImage is string && prod.defaultImage.size() <= 1048576; // support base64 embedded photo up to 1MB
+             prod.defaultImage is string && prod.defaultImage.size() <= 1048576 &&
+             (!('imageUrl' in prod) || (prod.imageUrl is string && prod.imageUrl.size() <= 1048576));
     }
     
     // Products Collection
@@ -46,12 +47,18 @@ service cloud.firestore {
       allow create: if isAdmin() && 
                     isValidId(productId) &&
                     isValidProduct(request.resource.data) &&
-                    request.resource.data.keys().hasAll(['id', 'nameKO', 'nameEN', 'nameJP', 'category', 'price', 'defaultImage']);
+                    request.resource.data.keys().hasAll(['id', 'nameKO', 'nameEN', 'category', 'price', 'defaultImage']);
                     
       allow update: if isAdmin() && 
                     isValidProduct(request.resource.data);
                     
       allow delete: if isAdmin();
+    }
+    
+    // Custom Image Overrides (Studio Atmosphere & Hero Banner)
+    match /image_overrides/{overrideId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
     
     // Admins Configuration Collection

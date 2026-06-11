@@ -7,6 +7,8 @@ import React from 'react';
 import { Star, MessageSquare, Upload, Calendar, User as UserIcon, Check } from 'lucide-react';
 import { DICTIONARY } from '../data';
 import { Review, Product } from '../types';
+import { isFirebaseConfigured, uploadImageToStorage } from '../lib/firebase';
+import { compressImage } from '../utils/imageDb';
 
 interface ReviewSectionProps {
   currentLang: 'KO' | 'EN' | 'JP';
@@ -29,24 +31,57 @@ export default function ReviewSection({
   const [content, setContent] = React.useState('');
   const [localPhoto, setLocalPhoto] = React.useState<string | undefined>(undefined);
   const [formSuccess, setFormSuccess] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadProgress, setUploadProgress] = React.useState('');
 
-  // File upload reader
+  // File upload reader with optimization and compression built-in
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setLocalPhoto(reader.result as string);
+      reader.onloadend = async () => {
+        setIsUploading(true);
+        setUploadProgress(currentLang === 'KO' ? '이미지 최적화 및 압축 중...' : 'Optimizing and compressing image...');
+        try {
+          const rawBase64 = reader.result as string;
+          // Pre-compress the review image to keep the transfer light and performant (max 1000px dimension)
+          const compressed = await compressImage(rawBase64, 1000);
+          setLocalPhoto(compressed);
+        } catch (err) {
+          console.error('Image compression failed, using source:', err);
+          setLocalPhoto(reader.result as string);
+        } finally {
+          setIsUploading(false);
+          setUploadProgress('');
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!author || !content) {
       alert(currentLang === 'KO' ? '이름과 리뷰 내용을 채워주세요.' : 'Please enter your name and review content.');
       return;
+    }
+
+    let finalImageUrl = localPhoto;
+
+    // If Firebase is configured and there's a selected photo, upload it to Firebase Storage!
+    if (localPhoto && isFirebaseConfigured()) {
+      setIsUploading(true);
+      setUploadProgress(currentLang === 'KO' ? 'Firebase Storage로 생생한 착용 사진 전송 중...' : 'Uploading real wearer snapshot to Firebase Storage...');
+      try {
+        const uniqueFileId = `review_${Date.now()}`;
+        // uploadImageToStorage returns the permanent cloud download URL
+        finalImageUrl = await uploadImageToStorage(uniqueFileId, localPhoto);
+      } catch (err) {
+        console.error('Firebase Storage upload failed, falling back to local snapshot:', err);
+      } finally {
+        setIsUploading(false);
+        setUploadProgress('');
+      }
     }
 
     const matchedProduct = products.find(p => p.id === selectedProduct);
@@ -60,7 +95,7 @@ export default function ReviewSection({
       author,
       rating,
       content,
-      image: localPhoto
+      image: finalImageUrl
     });
 
     setFormSuccess(true);
@@ -132,6 +167,7 @@ export default function ReviewSection({
                       value={author}
                       onChange={(e) => setAuthor(e.target.value)}
                       required
+                      disabled={isUploading}
                     />
                   </div>
 
@@ -147,6 +183,7 @@ export default function ReviewSection({
                           type="button"
                           id={`star-select-${s}`}
                           onClick={() => setRating(s)}
+                          disabled={isUploading}
                           className="text-amber-500 cursor-pointer focus:outline-hidden transition-transform hover:scale-110"
                         >
                           <Star size={20} fill={s <= rating ? 'currentColor' : 'none'} />
@@ -165,6 +202,7 @@ export default function ReviewSection({
                     className="w-full px-3 py-2 text-sm border border-stone-200 rounded-lg bg-stone-50 focus:outline-hidden focus:border-amber-700 cursor-pointer"
                     value={selectedProduct}
                     onChange={(e) => setSelectedProduct(e.target.value)}
+                    disabled={isUploading}
                   >
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -186,6 +224,7 @@ export default function ReviewSection({
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     required
+                    disabled={isUploading}
                   />
                 </div>
 
@@ -195,7 +234,7 @@ export default function ReviewSection({
                     {dict.uploadReviewPhoto}
                   </label>
                   <div className="flex items-center gap-4">
-                    <label className="px-4 py-2 border border-stone-300 rounded-lg text-xs font-semibold hover:bg-stone-50 cursor-pointer transition-colors flex items-center gap-2">
+                    <label className={`px-4 py-2 border border-stone-300 rounded-lg text-xs font-semibold ${isUploading ? 'bg-stone-100 cursor-not-allowed text-stone-400' : 'hover:bg-stone-50 cursor-pointer'} transition-colors flex items-center gap-2`}>
                       <Upload size={14} />
                       <span>{currentLang === 'KO' ? '파일 선택하기' : 'Choose File'}</span>
                       <input
@@ -203,10 +242,11 @@ export default function ReviewSection({
                         accept="image/*"
                         className="hidden"
                         onChange={handlePhotoUpload}
+                        disabled={isUploading}
                       />
                     </label>
                     {localPhoto ? (
-                      <div className="text-xs text-amber-700 font-mono font-medium flex items-center gap-1.5">
+                      <div className="text-xs text-amber-700 font-mono font-medium flex items-center gap-1.5 animate-fadeIn">
                         <Check size={14} className="text-emerald-600" />
                         <span>Ready (JPG/PNG Source Attached)</span>
                       </div>
@@ -217,19 +257,42 @@ export default function ReviewSection({
                     )}
                   </div>
                   {localPhoto && (
-                    <div className="mt-3 w-28 h-28 border border-stone-200 rounded-lg overflow-hidden shrink-0">
+                    <div className="mt-3 w-28 h-28 border border-stone-200 rounded-lg overflow-hidden shrink-0 shadow-xs relative group">
                       <img src={localPhoto} alt="Review upload preview" className="w-full h-full object-cover" />
+                      {!isUploading && (
+                        <button
+                          type="button"
+                          onClick={() => setLocalPhoto(undefined)}
+                          className="absolute inset-0 bg-black/55 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] uppercase font-mono font-bold"
+                        >
+                          {currentLang === 'KO' ? '삭제하기' : 'Remove'}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* Processing/Uploading Feedback Banner */}
+                {isUploading && (
+                  <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-3.5 text-xs text-amber-900 font-medium flex items-center gap-2.5 animate-pulse">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-600 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-700"></span>
+                    </span>
+                    <span>{uploadProgress || (currentLang === 'KO' ? '파일을 안전하게 처리 중...' : 'Processing file safely...')}</span>
+                  </div>
+                )}
 
                 {/* Submit trigger button */}
                 <button
                   type="submit"
                   id="submit-review-action"
-                  className="w-full py-3 rounded-lg bg-stone-900 hover:bg-stone-950 font-bold font-mono tracking-widest text-xs uppercase text-stone-50 cursor-pointer transition-colors shadow-xs"
+                  disabled={isUploading}
+                  className={`w-full py-3 rounded-lg font-bold font-mono tracking-widest text-xs uppercase text-stone-50 cursor-pointer transition-all shadow-xs ${isUploading ? 'bg-stone-400 cursor-not-allowed' : 'bg-stone-900 hover:bg-stone-950'}`}
                 >
-                  {dict.submitReview}
+                  {isUploading 
+                    ? (currentLang === 'KO' ? '파일 전송 및 가공 중...' : 'UPLOADING...') 
+                    : dict.submitReview}
                 </button>
               </form>
             )}
@@ -263,11 +326,12 @@ export default function ReviewSection({
                       src={rev.image}
                       alt="Customer wearable style"
                       className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
                     />
                   </div>
                 )}
 
-                <span className="inline-block px-2 py-0.5 roundedbg-stone-100 text-stone-500 text-[10px] uppercase font-mono font-semibold tracking-wider">
+                <span className="inline-block px-2 py-0.5 bg-stone-100 rounded text-stone-500 text-[10px] uppercase font-mono font-semibold tracking-wider">
                   {rev.productName}
                 </span>
 

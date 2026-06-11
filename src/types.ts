@@ -8,10 +8,12 @@ export interface Product {
   nameKO: string;
   nameEN: string;
   price: number;
-  category: 'ring' | 'bracelet' | 'keyring' | 'gift';
+  originalPrice?: number;
+  category: 'ring' | 'bracelet' | 'keyring' | 'gift' | 'earring' | 'necklace';
   descriptionKO: string;
   descriptionEN: string;
   defaultImage: string;
+  imageUrl?: string;
   materialKO: string;
   materialEN: string;
   options: {

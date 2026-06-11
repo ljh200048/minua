@@ -20,6 +20,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { Product } from '../types';
+import { compressImage, getProductImage, saveOverriddenImage, getOverriddenImages, getOverriddenDescriptions, saveOverriddenDescription } from '../utils/imageDb';
 import { 
   loginWithEmail, 
   logoutUser, 
@@ -27,7 +28,9 @@ import {
   isFirebaseConfigured, 
   saveProductInDb, 
   createProductInDb, 
-  deleteProductInDb 
+  deleteProductInDb,
+  saveImageOverrideInDb,
+  uploadImageToStorage
 } from '../lib/firebase';
 
 interface AdminDashboardProps {
@@ -44,6 +47,9 @@ export default function AdminDashboard({
   onClose
 }: AdminDashboardProps) {
   const [products, setProducts] = React.useState<Product[]>(initialProducts);
+  const [imageTick, setImageTick] = React.useState(0);
+  const [tempDescriptions, setTempDescriptions] = React.useState<Record<string, string>>({});
+
   const [user, setUser] = React.useState<any>(auth ? auth.currentUser : null);
   const [authLoading, setAuthLoading] = React.useState(false);
   const [authError, setAuthError] = React.useState('');
@@ -53,6 +59,7 @@ export default function AdminDashboard({
   const [loginPassword, setLoginPassword] = React.useState('');
   
   // Modal states for editing or creating
+  const [imageUploading, setImageUploading] = React.useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
@@ -147,16 +154,77 @@ export default function AdminDashboard({
     });
   };
 
-  // Image Upload handler to convert to base64
-  const handleRawImageUpload = (file: File, callback: (base64: string) => void) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      callback(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  // Optimized high-level image upload handler for Firebase Storage (Requirement #1, #2, #3 & #5)
+  // Fully prevents raw base64 or localStorage bloating by uploading immediately to Firebase Storage and setting download URL
+  const handleProductImageUpload = async (file: File, productId: string, isNewProduct: boolean) => {
+    const targetProdId = productId || 'new_product_' + Date.now();
+    setImageUploading(isNewProduct ? 'new' : targetProdId);
+    
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const rawBase64 = await base64Promise;
+      
+      // Auto-compress base64 to target safe specifications (JPEG quality 0.75, width <= 800)
+      const compressed = await compressImage(rawBase64, 800);
+      
+      // Direct Storage upload (falls back to a lightweight, safe localized Blob ObjURL in offline/demo mode)
+      const finalUrl = await uploadImageToStorage(targetProdId, compressed);
+      
+      if (isNewProduct) {
+        setNewProduct(prev => ({
+          ...prev,
+          defaultImage: finalUrl,
+          imageUrl: finalUrl
+        }));
+      } else {
+        setEditingProduct(prev => prev ? {
+          ...prev,
+          defaultImage: finalUrl,
+          imageUrl: finalUrl
+        } : null);
+      }
+    } catch (err) {
+      console.error('Failed to process/upload product image:', err);
+      alert('상품 대표 이미지 Firebase Storage 업로드에 실패했습니다. 데이터를 다시 확인하십시오.');
+    } finally {
+      setImageUploading(null);
+    }
   };
 
   // CRUD operation: Create
+  // Helper to parse errors precisely based on user requirement #6
+  const parseErrorMessage = (err: any): string => {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    
+    if (
+      errMsg.includes('QuotaExceededError') || 
+      errMsg.includes('quota exceeded') || 
+      errMsg.includes('LOCAL_STORAGE_QUOTA_EXCEEDED') || 
+      errMsg.includes('Storage full') ||
+      errMsg.includes('setItem')
+    ) {
+      return '로컬 브라우저 저장소(localStorage) 용량이 한계에 도달했습니다. 이전 브라우저 캐시 및 임시 파일 데이타가 꽉 찼으므로, 브라우저 데이터를 비우시거나 크래시 복구 후 다시 진행하십시오.';
+    }
+    if (
+      errMsg.includes('permission-denied') || 
+      errMsg.includes('insufficient permissions') || 
+      errMsg.includes('PERMISSION_DENIED') || 
+      errMsg.includes('rules') ||
+      errMsg.includes('firebase') && errMsg.includes('permission')
+    ) {
+      return 'Firebase Firestore database 권한(Security Rules) 보안 정책 위반 또는 인증 누락 오류입니다. 관리자 계정 권한이 올바른지 점검하세요.';
+    }
+    if (errMsg.includes('IMAGE_UPLOAD_FAILED')) {
+      return `이미지 업로드에 실패했습니다: ${errMsg.replace('IMAGE_UPLOAD_FAILED:', '').trim()}`;
+    }
+    return errMsg;
+  };
+
   const handleAddNewProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProduct.id || !newProduct.nameKO || !newProduct.nameEN || !newProduct.price) {
@@ -175,8 +243,9 @@ export default function AdminDashboard({
     } as Product;
 
     try {
-      await createProductInDb(itemToAdd, products);
-      const updatedList = [...products, itemToAdd];
+      // Save product in DB, obtaining clean, non-base64 image URL (Firebase Storage URL or light Blob URL)
+      const savedProduct = await createProductInDb(itemToAdd, products);
+      const updatedList = [...products, savedProduct];
       setProducts(updatedList);
       onProductsUpdated(updatedList);
       setIsAddModalOpen(false);
@@ -195,9 +264,10 @@ export default function AdminDashboard({
         options: {}
       });
       alert('상품을 성공적으로 데이터베이스에 추가하였습니다.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Add failed:', err);
-      alert('새 상품 추가 저장과정 중 오류가 발생했습니다. 권한 및 Firebase 규칙을 점검하세요.');
+      const detailedMessage = parseErrorMessage(err);
+      alert(`새 상품 추가 저장과정 중 오류가 발생했습니다.\n\n오류 원인 파악: ${detailedMessage}`);
     }
   };
 
@@ -207,16 +277,18 @@ export default function AdminDashboard({
     if (!editingProduct) return;
 
     try {
-      await saveProductInDb(editingProduct, products);
-      const updatedList = products.map(p => p.id === editingProduct.id ? editingProduct : p);
+      // Save product in DB, obtaining clean, non-base64 image URL (Firebase Storage URL or light Blob URL)
+      const savedProduct = await saveProductInDb(editingProduct, products);
+      const updatedList = products.map(p => p.id === editingProduct.id ? savedProduct : p);
       setProducts(updatedList);
       onProductsUpdated(updatedList);
       setIsEditModalOpen(false);
       setEditingProduct(null);
       alert('상품 정보 저장이 완료되었습니다.');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Update failed:', err);
-      alert('상품 수정을 저장하는 도중 오류가 발생했습니다. Firebase Firestore 권한 설정을 점검하십시오.');
+      const detailedMessage = parseErrorMessage(err);
+      alert(`상품 수정을 저장하는 도중 오류가 발생했습니다.\n\n오류 원인 파악: ${detailedMessage}`);
     }
   };
 
@@ -502,6 +574,234 @@ export default function AdminDashboard({
               </div>
             </div>
 
+            {/* CATEGORY REPRESENTATIVE IMAGE MANAGEMENT SECTION */}
+            <div className="mt-12 bg-[#FAF8F5]/45 border border-stone-200/80 rounded-2xl p-6">
+              <h2 className="text-base font-semibold text-stone-900 font-sans tracking-tight mb-2">
+                카테고리 대표 이미지 관리 (Category Cover Images)
+              </h2>
+              <p className="text-stone-500 text-xs mb-6 max-w-2xl leading-relaxed">
+                홈페이지에 표시되는 주요 카테고리(이링, 링, 네클리스, 브레이슬릿) 에 대한 대표 이미지를 안전하게 동기화합니다. 
+                업로드된 이미지는 <strong>Firebase Storage</strong>에 영구 보존되며, Firestore Database에는 보안 이미지 다운로드 URL만 동기화됩니다. 
+                (로컬 브라우저 디스크에는 이미지 base64 등의 부담스러운 데이터를 남겨두지 않습니다.)
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { 
+                    id: 'earring', 
+                    labelUrlKey: 'col-earring-img', 
+                    titleKO: '귀걸이 (Earring)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80',
+                    fallbackDbKeys: ['col-earring-img', 'earring-cat-stub']
+                  },
+                  { 
+                    id: 'ring', 
+                    labelUrlKey: 'col-ring-img', 
+                    titleKO: '반지 (Ring)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&q=80',
+                    fallbackDbKeys: ['col-ring-img', 'ring-cat-stub']
+                  },
+                  { 
+                    id: 'necklace', 
+                    labelUrlKey: 'col-necklace-img', 
+                    titleKO: '목걸이 (Necklaces)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&q=80',
+                    fallbackDbKeys: ['col-necklace-img', 'necklace-cat-stub']
+                  },
+                  { 
+                    id: 'bracelet', 
+                    labelUrlKey: 'col-bracelet-img', 
+                    titleKO: '팔찌 (Bracelet)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600&q=80',
+                    fallbackDbKeys: ['col-bracelet-img', 'bracelet-cat-stub']
+                  }
+                ].map((categoryItem) => {
+                  const resolvedImgUrl = getProductImage(categoryItem.labelUrlKey, categoryItem.defaultImg);
+                  const isCustom = getOverriddenImages()[categoryItem.labelUrlKey] ? true : false;
+                  
+                  return (
+                    <div 
+                      key={categoryItem.id} 
+                      className="bg-white border border-stone-200/85 rounded-xl p-4 flex flex-col justify-between shadow-2xs relative group"
+                    >
+                      <div>
+                        {/* Title & Badge */}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[12.5px] font-sans font-semibold text-stone-850">
+                            {categoryItem.titleKO}
+                          </span>
+                          {isCustom ? (
+                            <span className="px-2 py-0.5 rounded-full text-[8.5px] font-semibold bg-amber-50 text-amber-700 select-none uppercase tracking-wider font-mono">
+                              Custom Link
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[8.5px] font-semibold bg-stone-100 text-stone-500 select-none uppercase tracking-wider font-mono">
+                              Default
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Image Preview Window */}
+                        <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-stone-150 bg-stone-50 mb-4 flex items-center justify-center">
+                          <img 
+                            src={resolvedImgUrl} 
+                            alt={categoryItem.titleKO}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Management Controls */}
+                      <div className="space-y-2">
+                        {/* Custom Image Upload Input and Button */}
+                        <label className="w-full py-2 bg-stone-50 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-lg cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                          <Camera size={13} />
+                          <span>대표 이미지 변경</span>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = async () => {
+                                  try {
+                                    const base64 = reader.result as string;
+                                    const compressed = await compressImage(base64, 1000);
+                                    
+                                    // 1. Upload compressed base64 to Firebase Storage and save URL in Firestore
+                                    const finalUrl = await saveImageOverrideInDb(categoryItem.labelUrlKey, compressed);
+                                    
+                                    // 2. Also map to alternate database keys so they stay 100% in sync
+                                    for (const altKey of categoryItem.fallbackDbKeys) {
+                                      await saveImageOverrideInDb(altKey, finalUrl);
+                                      saveOverriddenImage(altKey, finalUrl);
+                                    }
+                                    // 3. Force update rendering
+                                    setImageTick(prev => prev + 1);
+                                  } catch (err) {
+                                    console.error('Failed to change category image:', err);
+                                    alert('카테고리 이미지 변경에 실패했습니다. 데이터를 확인하십시오.');
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+
+                        {/* Revert to default option */}
+                        {isCustom && (
+                          <button
+                            onClick={async () => {
+                              if (confirm('이 카테고리 이미지를 초기 디자인(기존 기본 이미지)으로 복원하시겠습니까?')) {
+                                try {
+                                  // Clear Firestore entries if they exist
+                                  for (const keyToClear of categoryItem.fallbackDbKeys) {
+                                    await saveImageOverrideInDb(keyToClear, '');
+                                    
+                                    // Delete from local cache
+                                    const localOverrides = getOverriddenImages();
+                                    delete localOverrides[keyToClear];
+                                    localStorage.setItem('minua_image_overrides', JSON.stringify(localOverrides));
+                                  }
+                                  setImageTick(prev => prev + 1);
+                                } catch (err) {
+                                  console.error('Failed to reset category image:', err);
+                                }
+                              }
+                            }}
+                            className="w-full py-1.5 bg-red-50 hover:bg-red-150 text-red-700 border border-red-200 hover:border-red-300 rounded-lg cursor-pointer text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors"
+                          >
+                            <RotateCcw size={11} />
+                            <span>기본 디자인으로 원복</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* BRAND PACKAGING DESCRIPTION MANAGEMENT SECTION */}
+            <div className="mt-12 bg-[#FAF8F5]/45 border border-stone-200/80 rounded-2xl p-6 text-left">
+              <h2 className="text-base font-semibold text-stone-900 font-sans tracking-tight mb-2">
+                Brand Packaging 관리 (Brand Packaging Customizer)
+              </h2>
+              <p className="text-stone-500 text-xs mb-6 max-w-2xl leading-relaxed">
+                홈페이지 하단에 위치한 <strong>Brand Packaging</strong> 섹션의 기프트 설명글 문구를 직접 커스텀 수정하여 영구 보관 관리합니다.<br />
+                수정한 카피는 메인 시그니처 프레젠테이션 카드 공간에 동기화되어 즉각 실시간 반영됩니다.<br />
+                <span className="text-amber-700 font-semibold">⚠️ 설명글 변경 시 설정한 관리자 암호를 묻습니다. (암호: <code>lch200048</code> 또는 <code>minua123</code>)</span>
+              </p>
+
+              <div className="bg-white border border-stone-200/85 rounded-xl p-5 shadow-2xs">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-wider block">
+                    Packaging Description Text
+                  </label>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-[11px] font-medium text-stone-700 block mb-1">설명글 문구 내용</span>
+                      <textarea
+                        rows={6}
+                        value={tempDescriptions['brand-packaging-image'] !== undefined 
+                          ? tempDescriptions['brand-packaging-image'] 
+                          : (getOverriddenDescriptions()['brand-packaging-image'] || "미누아의 시그니처 쇼핑백과 고급 선물 패키징은 주얼리를 구매하시는 모든 분들에게 무상으로 제공되는 세련된 선물 제안입니다. 튼튼하면서도 클래식한 마감의 감각적인 기프트 하드 박스와 프렌치 실크 리본이 소중한 마음에 영원의 숨결과 은은하게 머금는 명품 본연의 깊이감을 더해 줍니다.")
+                        }
+                        onChange={(e) => {
+                          setTempDescriptions(prev => ({
+                            ...prev,
+                            'brand-packaging-image': e.target.value
+                          }));
+                        }}
+                        className="w-full text-xs leading-relaxed p-3 border border-stone-200 rounded-lg bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/10 text-stone-700 placeholder-stone-400"
+                        placeholder="Brand Packaging에 대한 감각적인 고급 멘트를 기입해 주십시오..."
+                      />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={async () => {
+                          const pw = prompt('관리자 비밀번호를 입력해주십시오:');
+                          if (pw !== 'lch200048' && pw !== 'minua123') {
+                            alert('비밀번호가 올바르지 않습니다. 관리자 권한이 없습니다.');
+                            return;
+                          }
+                          const keyName = 'brand-packaging-image';
+                          const descVal = tempDescriptions[keyName] !== undefined 
+                            ? tempDescriptions[keyName] 
+                            : (getOverriddenDescriptions()[keyName] || "미누아의 시그니처 쇼핑백과 고급 선물 패키징은 주얼리를 구매하시는 모든 분들에게 무상으로 제공되는 세련된 선물 제안입니다. 튼튼하면서도 클래식한 마감의 감각적인 기프트 하드 박스와 프렌치 실크 리본이 소중한 마음에 영원의 숨결과 은은하게 머금는 명품 본연의 깊이감을 더해 줍니다.");
+
+                          try {
+                            const currentImage = getOverriddenImages()[keyName] || '';
+                            const imageToSave = currentImage || 'empty';
+                            await saveImageOverrideInDb(keyName, imageToSave, descVal);
+                            
+                            const savedDescs = getOverriddenDescriptions();
+                            savedDescs[keyName] = descVal;
+                            localStorage.setItem('minua_image_descriptions', JSON.stringify(savedDescs));
+                            
+                            setImageTick(prev => prev + 1);
+                            alert('Brand Packaging 설명문 저장이 드디어 성공 매칭 처리되었습니다.');
+                          } catch (err) {
+                            console.error('Failed to save packaging text:', err);
+                            alert('설명글 저장에 실패했습니다.');
+                          }
+                        }}
+                        className="px-5 py-2 bg-stone-900 text-white hover:bg-amber-900 rounded-lg text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                      >
+                        설명 텍스트 변경사항 저장 적용
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
       </div>
@@ -536,7 +836,12 @@ export default function AdminDashboard({
               {/* Image upload selector layout */}
               <div className="bg-stone-50 rounded-xl p-4 border border-dashed border-stone-200 text-center">
                 <div className="w-20 h-20 mx-auto rounded-lg border border-stone-200 bg-white flex items-center justify-center overflow-hidden mb-3">
-                  {editingProduct.defaultImage ? (
+                  {imageUploading === editingProduct.id ? (
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="w-4 h-4 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-[8px] text-stone-500 font-sans">업로드 중</span>
+                    </div>
+                  ) : editingProduct.defaultImage ? (
                     <img
                       src={editingProduct.defaultImage}
                       alt="수정용 주얼리 이미지 미리보기"
@@ -550,17 +855,16 @@ export default function AdminDashboard({
                 
                 <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 hover:bg-stone-850 text-white text-[10px] rounded-lg tracking-wide font-mono font-medium shadow-xs hover:scale-[1.01] transition-transform cursor-pointer">
                   <Camera size={13} />
-                  <span>상품 대표 실버 이미지 교체</span>
+                  <span>{imageUploading === editingProduct.id ? '대표 이미지 업로드 중' : '상품 대표 실버 이미지 교체'}</span>
                   <input
                     type="file"
                     accept="image/*"
+                    disabled={imageUploading === editingProduct.id}
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        handleRawImageUpload(file, (base64) => {
-                          handleEditProductChange('defaultImage', base64);
-                        });
+                        handleProductImageUpload(file, editingProduct.id, false);
                       }
                     }}
                   />
@@ -722,7 +1026,12 @@ export default function AdminDashboard({
               {/* Image upload selector layout */}
               <div className="bg-stone-50 rounded-xl p-4 border border-dashed border-stone-200 text-center">
                 <div className="w-20 h-20 mx-auto rounded-lg border border-stone-200 bg-white flex items-center justify-center overflow-hidden mb-3">
-                  {newProduct.defaultImage ? (
+                  {imageUploading === 'new' ? (
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="w-4 h-4 border-2 border-stone-900 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-[8px] text-stone-500 font-sans">업로드 중</span>
+                    </div>
+                  ) : newProduct.defaultImage ? (
                     <img
                       src={newProduct.defaultImage}
                       alt="새로운 주얼리 이미지 미리보기"
@@ -736,18 +1045,16 @@ export default function AdminDashboard({
                 
                 <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 hover:bg-stone-850 text-white text-[10px] rounded-lg tracking-wide font-mono font-medium shadow-xs hover:scale-[1.01] transition-transform cursor-pointer">
                   <Camera size={13} />
-                  <span>상품 대표 실버 이미지 선택</span>
+                  <span>{imageUploading === 'new' ? '대표 이미지 업로드 중' : '상품 대표 실버 이미지 선택'}</span>
                   <input
                     type="file"
                     accept="image/*"
-                    required
+                    disabled={imageUploading === 'new'}
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        handleRawImageUpload(file, (base64) => {
-                          handleNewProductChange('defaultImage', base64);
-                        });
+                        handleProductImageUpload(file, newProduct.id || 'new_product_' + Date.now(), true);
                       }
                     }}
                   />

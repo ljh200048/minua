@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Menu, X, ShoppingBag, User as MapUser, ArrowRight, ShieldCheck, Mail, MapPin } from 'lucide-react';
+import { Menu, X, ShoppingBag, User as MapUser, ArrowRight, ShieldCheck, Mail, MapPin, Search } from 'lucide-react';
 import { DICTIONARY } from '../data';
 
 interface HeaderProps {
@@ -29,6 +29,8 @@ export default function Header({
   openMyPage
 }: HeaderProps) {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const dict = DICTIONARY[currentLang];
 
   const primaryNavItems = [
@@ -44,31 +46,53 @@ export default function Header({
   return (
     <>
       {/* 2. Main Luxury Sticky Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-neutral-150 py-3 transition-all">
+      <header className="sticky top-0 z-40 bg-white border-b border-neutral-100 py-3 sm:py-4 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
+          <div className="flex items-center justify-between h-14 sm:h-16 relative">
             
-            {/* Left coordinate: Hamburger ☰ + KO EN JP */}
-            <div className="flex items-center space-x-4 sm:space-x-6">
+            {/* Left coordinate: Desktop Editorial Menu About / Shop / Journal */}
+            <div className="flex items-center space-x-6 sm:space-x-8">
               <button
                 id="header-hamburger-trigger"
                 onClick={() => setDrawerOpen(true)}
-                className="p-1 -ml-1 text-neutral-900 hover:text-neutral-600 transition-colors cursor-pointer focus:outline-hidden"
+                className="p-1 -ml-1 text-neutral-900 hover:text-neutral-600 transition-colors cursor-pointer focus:outline-hidden md:hidden"
                 aria-label="Toggle menu"
               >
                 <Menu size={20} strokeWidth={1.5} />
               </button>
               
-              {/* Language switcher - matches the sleek style in screenshots */}
-              <div className="flex items-center space-x-2.5 text-[10px] sm:text-[11px] font-sans tracking-widest">
+              {/* Premium Serif Desktop Links matching screenshot-1 */}
+              <nav className="hidden md:flex items-center space-x-10 font-serif text-[17px] tracking-wide text-neutral-800">
+                <button
+                  onClick={() => setActiveTab('minua-story')}
+                  className="hover:text-amber-800 transition-colors cursor-pointer focus:outline-hidden"
+                >
+                  About
+                </button>
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className="hover:text-amber-800 transition-colors cursor-pointer focus:outline-hidden"
+                >
+                  Shop
+                </button>
+                <button
+                  onClick={() => setActiveTab('review')}
+                  className="hover:text-amber-800 transition-colors cursor-pointer focus:outline-hidden"
+                >
+                  Journal
+                </button>
+              </nav>
+
+              {/* Language toggler */}
+              <div className="hidden sm:flex items-center space-x-2 text-[9px] font-mono tracking-widest text-neutral-450 uppercase border-l border-neutral-200 pl-4">
                 {(['KO', 'EN', 'JP'] as const).map((l) => (
                   <button
                     key={l}
                     onClick={() => setLang(l)}
-                    className={`transition-colors cursor-pointer py-1 font-sans ${
+                    className={`transition-colors cursor-pointer px-1 ${
                       currentLang === l 
-                        ? 'font-bold text-neutral-950 underline underline-offset-4 decoration-stone-800' 
-                        : 'text-neutral-400 hover:text-neutral-700 font-light'
+                        ? 'font-bold text-neutral-950 underline underline-offset-4 decoration-stone-400' 
+                        : 'text-neutral-400 hover:text-neutral-700'
                     }`}
                   >
                     {l}
@@ -77,40 +101,50 @@ export default function Header({
               </div>
             </div>
 
-            {/* Center coordinate: Cursive Cursive Brand signature */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center">
+            {/* Center coordinate: Classy Arched Logo 'minua' */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
               <button
                 id="logo-brand-btn"
                 onClick={() => {
                   setActiveTab('home');
                   setDrawerOpen(false);
                 }}
-                className="flex flex-col items-center justify-center group focus:outline-hidden cursor-pointer"
+                className="relative py-2.5 px-6 group focus:outline-hidden cursor-pointer"
               >
-                <span className="font-script text-3xl sm:text-4xl text-neutral-950 leading-none lowercase tracking-wide font-normal group-hover:text-amber-800 transition-colors select-none">
+                {/* Curved top arch line mirroring logo in screenshots */}
+                <div className="absolute top-0 left-1 right-1 h-3.5 border-t border-neutral-300 rounded-[100%_100%_0_0] scale-x-110 opacity-75" />
+                <span className="font-serif text-2xl sm:text-3xl text-neutral-950 leading-none lowercase tracking-wider font-normal group-hover:text-amber-800 transition-colors select-none block text-center mt-1">
                   minua
-                </span>
-                <span className="text-[7px] sm:text-[8px] tracking-[0.4em] sm:tracking-[0.55em] text-neutral-400 font-sans font-light uppercase mt-0 sm:mt-0.5 leading-none pl-1 transition-all">
-                  [per te]
                 </span>
               </button>
             </div>
 
-            {/* Right coordinate: Account map icon + Shopping bag icon */}
-            <div className="flex items-center space-x-3.5 sm:space-x-4.5">
+            {/* Right coordinate: Search, User, Cart */}
+            <div className="flex items-center space-x-3.5 sm:space-x-5">
               
+              {/* Search Toggle button */}
+              <button
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className={`p-1 text-neutral-900 hover:text-amber-800 transition-colors cursor-pointer focus:outline-hidden ${
+                  isSearchOpen ? 'text-amber-800' : ''
+                }`}
+                title="Search Products"
+              >
+                <Search size={20} strokeWidth={1.25} />
+              </button>
+
               {/* Profile button */}
               <button
                 id="header-profile-log-btn"
                 onClick={openMyPage}
-                className={`p-1 text-neutral-900 hover:text-amber-800 transition-colors cursor-pointer flex items-center gap-1.5 focus:outline-hidden ${
+                className={`p-1 text-neutral-900 hover:text-amber-800 transition-colors cursor-pointer flex items-center gap-1 focus:outline-hidden ${
                   activeTab === 'mypage' ? 'text-amber-800' : ''
                 }`}
                 title={dict.menuMyPage}
               >
                 <MapUser size={20} strokeWidth={1.25} />
                 {user && (
-                  <span className="hidden sm:inline text-[10px] font-medium tracking-wider text-neutral-600 truncate max-w-[70px]">
+                  <span className="hidden sm:inline text-[10px] font-mono tracking-wider text-neutral-600 truncate max-w-[70px]">
                     {user.name}
                   </span>
                 )}
@@ -135,6 +169,39 @@ export default function Header({
 
           </div>
         </div>
+
+        {/* Dynamic slide-down Search bar overlay */}
+        {isSearchOpen && (
+          <div className="bg-neutral-50 border-t border-neutral-100 py-3 px-4 animate-fadeIn">
+            <div className="max-w-md mx-auto relative flex items-center">
+              <input
+                type="text"
+                className="w-full bg-white border border-neutral-200 rounded-lg py-1.5 px-3.5 text-xs font-serif text-neutral-800 focus:outline-hidden pr-10"
+                placeholder={currentLang === 'KO' ? '찾으시는 주얼리를 입력하세요...' : 'Search for necklaces, rings, earrings...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    setActiveTab('all');
+                    // Simply filter via search value in products
+                    setIsSearchOpen(false);
+                  }
+                }}
+              />
+              <button 
+                onClick={() => {
+                  if (searchQuery.trim()) {
+                    setActiveTab('all');
+                    setIsSearchOpen(false);
+                  }
+                }}
+                className="absolute right-3 text-neutral-400 hover:text-neutral-800"
+              >
+                <Search size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* 3. Sleek Luxury Slide-out Sidebar Drawer Navigation */}

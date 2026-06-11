@@ -28,6 +28,12 @@ import {
   onSnapshot,
   getDocFromServer
 } from 'firebase/firestore';
+import {
+  getStorage,
+  ref as storageRefFunc,
+  uploadString,
+  getDownloadURL
+} from 'firebase/storage';
 import firebaseConfig from './firebase-applet-config.json';
 
 // Detect if real Firebase credentials are provided
@@ -43,12 +49,14 @@ export function isFirebaseConfigured(): boolean {
 let app;
 let dbInstance: any = null;
 let authInstance: any = null;
+let storageInstance: any = null;
 
 if (isFirebaseConfigured()) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
     authInstance = getAuth(app);
+    storageInstance = getStorage(app);
     
     // Validate connection to Firestore as requested by raw system guidelines
     const testConnection = async () => {
@@ -290,13 +298,85 @@ import { Product } from '../types';
 
 let localProductsCache: Product[] | null = null;
 
+/**
+ * Helps convert a base64 Data URL to a lightweight transient Object/Blob URL for the active session.
+ * This completely avoids storing massive base64 payloads inside products state and local storage.
+ */
+export function base64ToBlobUrl(base64Data: string): string {
+  try {
+    if (typeof window === 'undefined') return base64Data;
+    const parts = base64Data.split(';base64,');
+    if (parts.length < 2) return base64Data;
+    const contentType = parts[0].split(':')[1] || 'image/jpeg';
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i);
+    }
+    const blob = new Blob([uInt8Array], { type: contentType });
+    return URL.createObjectURL(blob);
+  } catch (err) {
+    console.error('Failed to convert base64 to blob url:', err);
+    return base64Data;
+  }
+}
+
+/**
+ * High-level service to upload a base64 image data-url into Firebase Storage.
+ * Restores 100% cloud durability with a neat public download URL.
+ */
+export async function uploadImageToStorage(productId: string, base64DataUrl: string): Promise<string> {
+  if (!isFirebaseConfigured() || !storageInstance) {
+    return base64ToBlobUrl(base64DataUrl);
+  }
+  
+  try {
+    const mimeMatch = base64DataUrl.match(/data:([^;]+);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const extension = mimeType.split('/')[1] || 'jpg';
+    const filePath = `products/${productId}_${Date.now()}.${extension}`;
+    
+    const fileRef = storageRefFunc(storageInstance, filePath);
+    await uploadString(fileRef, base64DataUrl, 'data_url');
+    const downloadUrl = await getDownloadURL(fileRef);
+    return downloadUrl;
+  } catch (err) {
+    console.error('Firebase Storage upload failed:', err);
+    throw err;
+  }
+}
+
 // Initialize products from local storage if in demo mode
 function getLocalProducts(initialList: Product[]): Product[] {
   if (!localProductsCache) {
     const stored = localStorage.getItem('minua_firestore_fallback_products');
     if (stored) {
       try {
-        localProductsCache = JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        let hasBase64 = false;
+        
+        // Clean out any previously bloated base64 strings to dynamically reclaim browser storage space
+        const sanitized = parsed.map((p: any) => {
+          if (p.defaultImage && p.defaultImage.startsWith('data:')) {
+            hasBase64 = true;
+            return {
+              ...p,
+              defaultImage: base64ToBlobUrl(p.defaultImage)
+            };
+          }
+          return p;
+        });
+
+        if (hasBase64) {
+          try {
+            localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(sanitized));
+          } catch (e) {
+            console.warn('Quota warning while cleaning up cache, purging fallback store');
+            localStorage.removeItem('minua_firestore_fallback_products');
+          }
+        }
+        localProductsCache = sanitized;
       } catch {
         localProductsCache = [...initialList];
       }
@@ -308,8 +388,37 @@ function getLocalProducts(initialList: Product[]): Product[] {
 }
 
 function saveLocalProducts(products: Product[]) {
-  localProductsCache = products;
-  localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(products));
+  // Translate any base64 fields of stored products into lightweight ObjURLs before saving to local storage
+  const sanitized = products.map((p: any) => {
+    if (p.defaultImage && p.defaultImage.startsWith('data:')) {
+      return {
+        ...p,
+        defaultImage: base64ToBlobUrl(p.defaultImage)
+      };
+    }
+    return p;
+  });
+
+  localProductsCache = sanitized;
+
+  try {
+    localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(sanitized));
+  } catch (err) {
+    console.error('Initial fallback save failed. Attempting automatic quota cleanup...', err);
+    if (err instanceof DOMException && (err.name === 'QuotaExceededError' || err.code === 22)) {
+      // Proactively clear large fallback cache variables to satisfy Requirement #4 & #3
+      localStorage.removeItem('minua_firestore_fallback_products');
+      localStorage.removeItem('minua_image_overrides');
+      try {
+        // Strip image urls entirely from objects as absolute fallback so product texts are preserved safely
+        const textOnlyProducts = sanitized.map(p => ({ ...p, defaultImage: '' }));
+        localStorage.setItem('minua_firestore_fallback_products', JSON.stringify(textOnlyProducts));
+        console.log('Successfully saved text-only product configurations after quota clearance.');
+      } catch (retryErr) {
+        console.error('Could not write to localStorage fallback even after extreme quota clearance:', retryErr);
+      }
+    }
+  }
 }
 
 /**
@@ -349,7 +458,8 @@ export async function fetchProducts(initialList: Product[]): Promise<Product[]> 
         category: data.category || 'ring',
         descriptionKO: data.descriptionKO || '',
         descriptionEN: data.descriptionEN || '',
-        defaultImage: data.defaultImage || '',
+        defaultImage: data.defaultImage || data.imageUrl || '',
+        imageUrl: data.imageUrl || '',
         materialKO: data.materialKO || '',
         materialEN: data.materialEN || '',
         options: data.options || {}
@@ -371,53 +481,106 @@ export async function fetchProducts(initialList: Product[]): Promise<Product[]> 
 /**
  * Save or update product data in Firestore (or fallback storage)
  */
-export async function saveProductInDb(product: Product, initialList: Product[]): Promise<void> {
+export async function saveProductInDb(product: Product, initialList: Product[]): Promise<Product> {
   const docPath = `products/${product.id}`;
   
+  let finalProduct = { ...product };
+  const targetImage = product.defaultImage || product.imageUrl;
+  if (targetImage && targetImage.startsWith('data:')) {
+    try {
+      // Automatically upload to storage and obtain download URL
+      const downloadUrl = await uploadImageToStorage(product.id, targetImage);
+      finalProduct.defaultImage = downloadUrl;
+      finalProduct.imageUrl = downloadUrl;
+    } catch (uploadErr) {
+      console.error('Failed to upload image before saving product:', uploadErr);
+      const isQuota = uploadErr instanceof DOMException && (uploadErr.name === 'QuotaExceededError' || uploadErr.code === 22);
+      if (isQuota) {
+        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
+      }
+      throw uploadErr;
+    }
+  }
+
+  if (!finalProduct.imageUrl && finalProduct.defaultImage) {
+    finalProduct.imageUrl = finalProduct.defaultImage;
+  }
+  if (!finalProduct.defaultImage && finalProduct.imageUrl) {
+    finalProduct.defaultImage = finalProduct.imageUrl;
+  }
+
   if (!isFirebaseConfigured() || !dbInstance) {
     const list = getLocalProducts(initialList);
-    const idx = list.findIndex(p => p.id === product.id);
+    const idx = list.findIndex(p => p.id === finalProduct.id);
     if (idx >= 0) {
-      list[idx] = product;
+      list[idx] = finalProduct;
     } else {
-      list.push(product);
+      list.push(finalProduct);
     }
     saveLocalProducts(list);
-    return;
+    return finalProduct;
   }
   
   try {
-    const docRef = doc(dbInstance, 'products', product.id);
+    const docRef = doc(dbInstance, 'products', finalProduct.id);
     await setDoc(docRef, {
-      ...product,
+      ...finalProduct,
       updatedAt: new Date().toISOString()
     });
+    return finalProduct;
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, docPath);
+    return finalProduct;
   }
 }
 
 /**
  * Create a brand-new product
  */
-export async function createProductInDb(product: Product, initialList: Product[]): Promise<void> {
+export async function createProductInDb(product: Product, initialList: Product[]): Promise<Product> {
   const docPath = `products/${product.id}`;
   
+  let finalProduct = { ...product };
+  const targetImage = product.defaultImage || product.imageUrl;
+  if (targetImage && targetImage.startsWith('data:')) {
+    try {
+      const downloadUrl = await uploadImageToStorage(product.id, targetImage);
+      finalProduct.defaultImage = downloadUrl;
+      finalProduct.imageUrl = downloadUrl;
+    } catch (uploadErr) {
+      console.error('Failed to upload image before creating product:', uploadErr);
+      const isQuota = uploadErr instanceof DOMException && (uploadErr.name === 'QuotaExceededError' || uploadErr.code === 22);
+      if (isQuota) {
+        throw new Error('LOCAL_STORAGE_QUOTA_EXCEEDED');
+      }
+      throw uploadErr;
+    }
+  }
+
+  if (!finalProduct.imageUrl && finalProduct.defaultImage) {
+    finalProduct.imageUrl = finalProduct.defaultImage;
+  }
+  if (!finalProduct.defaultImage && finalProduct.imageUrl) {
+    finalProduct.defaultImage = finalProduct.imageUrl;
+  }
+
   if (!isFirebaseConfigured() || !dbInstance) {
     const list = getLocalProducts(initialList);
-    list.push(product);
+    list.push(finalProduct);
     saveLocalProducts(list);
-    return;
+    return finalProduct;
   }
   
   try {
-    const docRef = doc(dbInstance, 'products', product.id);
+    const docRef = doc(dbInstance, 'products', finalProduct.id);
     await setDoc(docRef, {
-      ...product,
+      ...finalProduct,
       updatedAt: new Date().toISOString()
     });
+    return finalProduct;
   } catch (err) {
     handleFirestoreError(err, OperationType.CREATE, docPath);
+    return finalProduct;
   }
 }
 
@@ -440,5 +603,98 @@ export async function deleteProductInDb(productId: string, initialList: Product[
   } catch (err) {
     handleFirestoreError(err, OperationType.DELETE, docPath);
   }
+}
+
+/**
+ * Save custom image override in Firestore (or fallback storage)
+ */
+export async function saveImageOverrideInDb(id: string, base64Data: string, description?: string): Promise<string> {
+  const docPath = `image_overrides/${id}`;
+  
+  if (!base64Data) {
+    if (isFirebaseConfigured() && dbInstance) {
+      try {
+        const docRef = doc(dbInstance, 'image_overrides', id);
+        await deleteDoc(docRef);
+      } catch (err) {
+        console.error('Failed to delete image override from Firestore:', err);
+      }
+    }
+    return '';
+  }
+
+  let finalUrl = base64Data;
+
+  // Try uploading to Storage first if available to make it perfectly durable and lightweight
+  if (isFirebaseConfigured() && storageInstance && base64Data.startsWith('data:')) {
+    try {
+      finalUrl = await uploadImageToStorage(`override_${id}`, base64Data);
+    } catch (uploadErr) {
+      console.error('Failed to upload custom override to Firebase Storage:', uploadErr);
+    }
+  }
+
+  if (!isFirebaseConfigured() || !dbInstance) {
+    return finalUrl;
+  }
+  
+  try {
+    const docRef = doc(dbInstance, 'image_overrides', id);
+    const updateData: any = {
+      id,
+      base64Data: finalUrl,
+      updatedAt: new Date().toISOString()
+    };
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+    await setDoc(docRef, updateData, { merge: true });
+    return finalUrl;
+  } catch (err) {
+    console.error('Failed to sync image override to Firestore:', err);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, docPath);
+    } catch {
+      // Graceful fallback
+    }
+    return finalUrl;
+  }
+}
+
+/**
+ * Fetch all custom image overrides from Firestore
+ */
+export async function fetchAllImageOverridesFromDb(): Promise<{
+  images: Record<string, string>;
+  descriptions: Record<string, string>;
+}> {
+  const collectionPath = 'image_overrides';
+  const images: Record<string, string> = {};
+  const descriptions: Record<string, string> = {};
+  
+  if (!isFirebaseConfigured() || !dbInstance) {
+    return { images, descriptions };
+  }
+  
+  try {
+    const colRef = collection(dbInstance, collectionPath);
+    const q = query(colRef);
+    const sn = await getDocs(q);
+    
+    sn.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.id) {
+        if (data.base64Data) {
+          images[data.id] = data.base64Data;
+        }
+        if (data.description !== undefined) {
+          descriptions[data.id] = data.description;
+        }
+      }
+    });
+  } catch (err) {
+    console.warn('Failed to fetch image overrides from Firestore:', err);
+  }
+  return { images, descriptions };
 }
 

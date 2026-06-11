@@ -19,6 +19,7 @@ import {
 
 import Header from './components/Header';
 import Footer from './components/Footer';
+import AestheticHome from './components/AestheticHome';
 import AttachmentStory from './components/AttachmentStory';
 import ReviewSection from './components/ReviewSection';
 import CartAndCheckout from './components/CartAndCheckout';
@@ -29,8 +30,8 @@ import AdminDashboard from './components/AdminDashboard';
 
 import { INITIAL_PRODUCTS, INITIAL_REVIEWS, DICTIONARY } from './data';
 import { Product, CartItem, Order, Review, User } from './types';
-import { getProductImage, saveOverriddenImage, getOverriddenImages } from './utils/imageDb';
-import { fetchProducts, auth, isFirebaseConfigured } from './lib/firebase';
+import { getProductImage, saveOverriddenImage, getOverriddenImages, importOverriddenImages, compressImage, importOverriddenDescriptions } from './utils/imageDb';
+import { fetchProducts, auth, isFirebaseConfigured, fetchAllImageOverridesFromDb, saveProductInDb, saveImageOverrideInDb } from './lib/firebase';
 
 export default function App() {
   const [lang, setLang] = React.useState<'KO' | 'EN' | 'JP'>('KO');
@@ -77,26 +78,92 @@ export default function App() {
   const isAdminAuthenticated = adminUser && adminUser.email === 'lch200048@gmail.com';
 
   React.useEffect(() => {
-    async function getSyncedProducts() {
+    async function getSyncedData() {
+      try {
+        const overridesResult = await fetchAllImageOverridesFromDb();
+        if (overridesResult) {
+          if (overridesResult.images && Object.keys(overridesResult.images).length > 0) {
+            importOverriddenImages(overridesResult.images);
+          }
+          if (overridesResult.descriptions && Object.keys(overridesResult.descriptions).length > 0) {
+            importOverriddenDescriptions(overridesResult.descriptions);
+          }
+        }
+      } catch (err) {
+        console.warn('Cloud image overrides load error:', err);
+      }
+
       const data = await fetchProducts(INITIAL_PRODUCTS);
-      setProductsList(data);
+      const sanitized = data.map(p => {
+        if (p.id === 'ring-01' && (p.defaultImage === '/images/ring-01.svg' || !p.defaultImage)) {
+          return { ...p, defaultImage: '/images/silhouette-wave-silver-ring.jpg' };
+        }
+        return p;
+      });
+      setProductsList(sanitized);
     }
-    getSyncedProducts();
+    getSyncedData();
   }, [imageTick]);
 
   React.useEffect(() => {
     const handleUrlRouting = () => {
       const path = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category');
+
       if (path === '/admin') {
         setIsAdminView(true);
+      } else if (path === '/products') {
+        setIsAdminView(false);
+        if (cat) {
+          setActiveTab(cat);
+        } else {
+          setActiveTab('all');
+        }
       } else {
         setIsAdminView(false);
+        if (path === '/') {
+          setActiveTab('home');
+        }
       }
     };
     handleUrlRouting();
     window.addEventListener('popstate', handleUrlRouting);
     return () => window.removeEventListener('popstate', handleUrlRouting);
   }, []);
+
+  // Sync activeTab to browser URL for deep linking and back button support
+  React.useEffect(() => {
+    if (isAdminView) return;
+
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('category');
+
+    if (activeTab === 'home') {
+      if (path !== '/') {
+        window.history.pushState({}, '', '/');
+      }
+    } else if (
+      activeTab === 'all' || 
+      activeTab === 'ring' || 
+      activeTab === 'bracelet' || 
+      activeTab === 'keyring' || 
+      activeTab === 'gift' || 
+      activeTab === 'earring' || 
+      activeTab === 'necklace'
+    ) {
+      const desiredPath = `/products${activeTab !== 'all' ? `?category=${activeTab}` : ''}`;
+      const currentFull = path + window.location.search;
+      if (currentFull !== desiredPath) {
+        window.history.pushState({}, '', desiredPath);
+      }
+    } else {
+      if (path !== '/' && activeTab !== 'mypage') {
+        window.history.pushState({}, '', '/');
+      }
+    }
+  }, [activeTab, isAdminView]);
 
   const navigateToAdmin = () => {
     window.history.pushState({}, '', '/admin');
@@ -106,6 +173,7 @@ export default function App() {
   const navigateToHome = () => {
     window.history.pushState({}, '', '/');
     setIsAdminView(false);
+    setImageTick(prev => prev + 1);
   };
   
   // Persistence state hooks loaded from LocalStorage
@@ -278,11 +346,18 @@ export default function App() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        saveOverriddenImage(ownerTargetDesign, reader.result as string);
-        setImageTick(prev => prev + 1);
-        setOwnerSuccessMessage(dict.uploadSuccessMsg);
-        setTimeout(() => setOwnerSuccessMessage(''), 3000);
+      reader.onloadend = async () => {
+        try {
+          const rawBase64 = reader.result as string;
+          const compressed = await compressImage(rawBase64, 1200);
+          const finalUrl = await saveImageOverrideInDb(ownerTargetDesign, compressed);
+          saveOverriddenImage(ownerTargetDesign, finalUrl);
+          setImageTick(prev => prev + 1);
+          setOwnerSuccessMessage(dict.uploadSuccessMsg);
+          setTimeout(() => setOwnerSuccessMessage(''), 3000);
+        } catch (err) {
+          console.error('Failed to upload custom banner:', err);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -317,7 +392,17 @@ export default function App() {
         setLang={setLang}
         activeTab={activeTab}
         setActiveTab={(t) => {
-          if (t === 'all' || t === 'ring' || t === 'bracelet' || t === 'keyring' || t === 'gift' || t === 'minua-story' || t === 'review') {
+          if (
+            t === 'all' || 
+            t === 'ring' || 
+            t === 'bracelet' || 
+            t === 'keyring' || 
+            t === 'gift' || 
+            t === 'minua-story' || 
+            t === 'review' || 
+            t === 'earring' || 
+            t === 'necklace'
+          ) {
             setActiveTab(t);
           } else {
             setActiveTab('home');
@@ -332,8 +417,20 @@ export default function App() {
       {/* Main Dynamic View Panels */}
       <main className="flex-1">
         
-        {/* VIEW 1: LANDING HOMEPAGE */}
+        {/* VIEW 1: LANDING EDITORIAL HOMEPAGE */}
         {activeTab === 'home' && (
+          <AestheticHome
+            lang={lang}
+            productsList={productsList}
+            wishlist={wishlist}
+            handleToggleWishlist={handleToggleWishlist}
+            setSelectedProduct={setSelectedProduct}
+            setActiveTab={setActiveTab}
+            isAdminAuthenticated={isAdminAuthenticated}
+            setImageTick={setImageTick}
+          />
+        )}
+        {activeTab === 'legacy-home-disabled' && (
           <div id="home-view-panel" className="space-y-16 sm:space-y-24 animate-fadeIn">
             
             {/* High-end Seq Banners Stack (Exactly matching m.xte.co.kr layout) */}
@@ -646,9 +743,21 @@ export default function App() {
                                   const file = e.target.files?.[0];
                                   if (file) {
                                     const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      saveOverriddenImage(prod.id, reader.result as string);
-                                      setImageTick(prev => prev + 1);
+                                    reader.onloadend = async () => {
+                                      try {
+                                        const rawBase64 = reader.result as string;
+                                        const compressed = await compressImage(rawBase64, 1000);
+                                        saveOverriddenImage(prod.id, compressed);
+                                        
+                                        const updatedProd = { ...prod, defaultImage: compressed };
+                                        const savedProd = await saveProductInDb(updatedProd, productsList);
+                                        
+                                        saveOverriddenImage(prod.id, savedProd.defaultImage);
+                                        setProductsList(prev => prev.map(p => p.id === prod.id ? savedProd : p));
+                                        setImageTick(prev => prev + 1);
+                                      } catch (err) {
+                                        console.error('Failed to change product image:', err);
+                                      }
                                     };
                                     reader.readAsDataURL(file);
                                   }
@@ -754,8 +863,8 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 2: PRODUCT ARCHIVE SHOP (Ring, Bracelet, Keyring, Gift) */}
-        {(activeTab === 'all' || activeTab === 'ring' || activeTab === 'bracelet' || activeTab === 'keyring' || activeTab === 'gift') && (
+        {/* VIEW 2: PRODUCT ARCHIVE SHOP (Ring, Bracelet, Keyring, Gift, Earring, Necklace) */}
+        {(activeTab === 'all' || activeTab === 'ring' || activeTab === 'bracelet' || activeTab === 'keyring' || activeTab === 'gift' || activeTab === 'earring' || activeTab === 'necklace') && (
           <div id="product-archive-panel" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 animate-fadeIn">
             
             {/* Upper Category Filter indicators */}
@@ -834,9 +943,21 @@ export default function App() {
                                   const file = e.target.files?.[0];
                                   if (file) {
                                     const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      saveOverriddenImage(prod.id, reader.result as string);
-                                      setImageTick(prev => prev + 1);
+                                    reader.onloadend = async () => {
+                                      try {
+                                        const rawBase64 = reader.result as string;
+                                        const compressed = await compressImage(rawBase64, 1000);
+                                        saveOverriddenImage(prod.id, compressed);
+                                        
+                                        const updatedProd = { ...prod, defaultImage: compressed };
+                                        const savedProd = await saveProductInDb(updatedProd, productsList);
+                                        
+                                        saveOverriddenImage(prod.id, savedProd.defaultImage);
+                                        setProductsList(prev => prev.map(p => p.id === prod.id ? savedProd : p));
+                                        setImageTick(prev => prev + 1);
+                                      } catch (err) {
+                                        console.error('Failed to change product image:', err);
+                                      }
                                     };
                                     reader.readAsDataURL(file);
                                   }
@@ -964,13 +1085,21 @@ export default function App() {
           onAddToCart={handleAddToCart}
           wishlist={wishlist}
           onToggleWishlist={handleToggleWishlist}
-          onImageChange={isAdminAuthenticated ? (newBase64) => {
-            saveOverriddenImage(selectedProduct.id, newBase64);
-            setSelectedProduct({
-              ...selectedProduct,
-              defaultImage: newBase64
-            });
-            setImageTick(prev => prev + 1);
+          onImageChange={isAdminAuthenticated ? async (newBase64) => {
+            try {
+              const compressed = await compressImage(newBase64, 1000);
+              saveOverriddenImage(selectedProduct.id, compressed);
+              
+              const updated = { ...selectedProduct, defaultImage: compressed };
+              const saved = await saveProductInDb(updated, productsList);
+              
+              saveOverriddenImage(selectedProduct.id, saved.defaultImage);
+              setSelectedProduct(saved);
+              setProductsList(prev => prev.map(p => p.id === selectedProduct.id ? saved : p));
+              setImageTick(prev => prev + 1);
+            } catch (err) {
+              console.error('Failed to sync details image swap:', err);
+            }
           } : undefined}
         />
       )}
