@@ -618,109 +618,24 @@ export default function App() {
                     fallbackBg: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop&q=80' 
                   },
                 ].map((cat) => (
-                  <div
+                  <button
                     key={cat.id}
                     id={`home-cat-card-${cat.id}`}
-                    className="relative aspect-square rounded-2xl overflow-hidden group border border-stone-100 shadow-2xs"
+                    onClick={() => setActiveTab(cat.id)}
+                    className="relative aspect-square sm:aspect-auto sm:py-8 sm:px-6 p-5 rounded-2xl border border-stone-200 bg-[#FAF8F5]/85 hover:bg-white hover:border-amber-800/60 transition-all duration-300 flex flex-col justify-between text-left cursor-pointer group shadow-2xs hover:shadow-xs focus:outline-hidden"
                   >
-                    <img
-                      src={getCategoryCoverImage(cat.id, cat.bg)}
-                      alt={cat.label}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = cat.fallbackBg;
-                      }}
-                    />
-                    {/* Clickable overlay to change active tab */}
-                    <button
-                      onClick={() => setActiveTab(cat.id)}
-                      className="absolute inset-0 bg-stone-950/45 group-hover:bg-stone-950/55 transition-colors text-left focus:outline-hidden cursor-pointer"
-                    />
-
-                    {/* Admin Image controller */}
-                    {isAdminAuthenticated && (
-                      <div className="absolute top-4 right-4 z-20 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        <label className="bg-white/95 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-full px-2.5 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[9px] font-mono tracking-wider font-semibold transition-colors">
-                          <Camera size={11} />
-                          <span>{lang === 'KO' ? '교체' : 'Swap'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                try {
-                                  const reader = new FileReader();
-                                  reader.onloadend = async () => {
-                                    try {
-                                      const base64 = reader.result as string;
-                                      const compressed = await compressImage(base64, 1000);
-                                      // Distinct Category Image Upload Function (Requirement #6, #8)
-                                      const storageUrl = await uploadCategoryImageToStorage(cat.id, compressed);
-                                      // Save to Firestore (Requirement #5)
-                                      await saveCategoryInDb(cat.id, storageUrl);
-                                      setImageTick(prev => prev + 1);
-                                      alert(lang === 'KO' ? '카테고리 대표 이미지가 변경되었습니다.' : 'Category cover image updated successfully.');
-                                    } catch (innerErr) {
-                                      console.error('Category cover upload error:', innerErr);
-                                      alert(lang === 'KO' ? '업로드 중 오류가 발생했습니다.' : 'Upload failed.');
-                                    }
-                                  };
-                                  reader.readAsDataURL(file);
-                                } catch (err) {
-                                  console.error(err);
-                                }
-                              }
-                            }}
-                          />
-                        </label>
-                        {(() => {
-                          const hasCustom = categoriesList.some(c => c.id === cat.id && c.categoryImageUrl);
-                          const hasLocal = !!getOverriddenImages()[cat.id + '-cat-stub'];
-                          if (hasCustom || hasLocal) {
-                            return (
-                              <button
-                                onClick={async () => {
-                                  if (confirm(lang === 'KO' ? '이 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this category image?')) {
-                                    try {
-                                      await saveCategoryInDb(cat.id, '');
-                                      const overrides = getOverriddenImages();
-                                      delete overrides[cat.id + '-cat-stub'];
-                                      localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
-                                      localStorage.removeItem('minua_firestore_fallback_categories'); // Clear local category state cache
-                                      setImageTick(prev => prev + 1);
-                                    } catch (err) {
-                                      console.error(err);
-                                    }
-                                  }
-                                }}
-                                className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-1.5 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[9px] font-mono tracking-wider font-semibold transition-colors"
-                                title={lang === 'KO' ? '원래대로 복구' : 'Revert'}
-                              >
-                                <RefreshCw size={10} />
-                              </button>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                    )}
-                    
-                    <div className="absolute inset-5 flex flex-col justify-between text-stone-100 z-10 pointer-events-none">
-                      <span className="text-[10px] font-mono tracking-wider text-amber-400 bg-white/10 px-2.5 py-0.5 rounded-full select-none w-fit">
-                        Collection ({productsList.filter(p => p.category === cat.id).length})
-                      </span>
-                      <div>
-                        <h3 className="text-lg font-bold font-sans tracking-wide">{cat.label}</h3>
-                        <p className="text-[10px] font-mono text-stone-300 font-light mt-1">
-                          {lang === 'KO' ? cat.detailKO : cat.detailEN}
-                        </p>
-                      </div>
+                    <span className="text-[9.5px] font-mono tracking-wider text-amber-800 bg-amber-800/5 px-2.5 py-0.5 rounded-full select-none w-fit font-semibold transition-colors group-hover:bg-amber-800/10">
+                      Collection ({productsList.filter(p => p.category === cat.id).length})
+                    </span>
+                    <div className="mt-4 sm:mt-6">
+                      <h3 className="text-sm sm:text-base font-semibold font-sans tracking-tight text-stone-850 group-hover:text-amber-800 transition-colors">
+                        {cat.label}
+                      </h3>
+                      <p className="text-[10px] sm:text-xs font-sans text-stone-450 font-light mt-1.5 leading-normal">
+                        {lang === 'KO' ? cat.detailKO : cat.detailEN}
+                      </p>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
