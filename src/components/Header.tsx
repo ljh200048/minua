@@ -38,6 +38,8 @@ export default function Header({
     { id: 'ring', label: dict.menuRing },
     { id: 'bracelet', label: dict.menuBracelet },
     { id: 'keyring', label: dict.menuKeyring },
+    { id: 'earring', label: dict.menuEarring },
+    { id: 'necklace', label: dict.menuNecklace },
     { id: 'gift', label: dict.menuGift },
     { id: 'minua-story', label: dict.menuAttStory },
     { id: 'review', label: dict.menuReview },

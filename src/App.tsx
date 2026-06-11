@@ -527,14 +527,13 @@ export default function App() {
 
             {/* Quick Filter Categories Section */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
                   { 
                     id: 'ring', 
                     label: dict.menuRing, 
                     detailKO: '유선형 유려한 마감', 
                     detailEN: 'Delicate band silvers', 
-                    count: 2, 
                     bg: '/images/collection-ring.jpg', 
                     fallbackBg: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80' 
                   },
@@ -543,25 +542,38 @@ export default function App() {
                     label: dict.menuBracelet, 
                     detailKO: '메탈릭 체인과 뱀줄', 
                     detailEN: 'Modern wrist textures', 
-                    count: 2, 
                     bg: '/images/collection-bracelet.jpg', 
                     fallbackBg: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800&auto=format&fit=crop&q=80' 
                   },
                   { 
                     id: 'keyring', 
                     label: dict.menuKeyring, 
-                    detailKO: 'minua 마스터 커스텀 에디션', 
+                    detailKO: 'minua 마스터 에디션', 
                     detailEN: 'Aesthetic attachments', 
-                    count: 2, 
                     bg: '/images/collection-keyring.jpg', 
                     fallbackBg: 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=800&auto=format&fit=crop&q=80' 
+                  },
+                  { 
+                    id: 'earring', 
+                    label: dict.menuEarring, 
+                    detailKO: '은은하게 반짝이는 디테일', 
+                    detailEN: 'Shimmering fine details', 
+                    bg: '/images/collection-earring.jpg', 
+                    fallbackBg: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&auto=format&fit=crop&q=80' 
+                  },
+                  { 
+                    id: 'necklace', 
+                    label: dict.menuNecklace, 
+                    detailKO: '목라인을 타고 흐르는 선맥', 
+                    detailEN: 'Elegant collarbone lines', 
+                    bg: '/images/collection-necklace.jpg', 
+                    fallbackBg: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80' 
                   },
                   { 
                     id: 'gift', 
                     label: dict.menuGift, 
                     detailKO: '소중함을 투영하는 세트', 
                     detailEN: 'Gifting set packing', 
-                    count: 1, 
                     bg: '/images/collection-gift.jpg', 
                     fallbackBg: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop&q=80' 
                   },
@@ -631,7 +643,7 @@ export default function App() {
                     
                     <div className="absolute inset-5 flex flex-col justify-between text-stone-100 z-10 pointer-events-none">
                       <span className="text-[10px] font-mono tracking-wider text-amber-400 bg-white/10 px-2.5 py-0.5 rounded-full select-none w-fit">
-                        Collection ({cat.count})
+                        Collection ({productsList.filter(p => p.category === cat.id).length})
                       </span>
                       <div>
                         <h3 className="text-lg font-bold font-sans tracking-wide">{cat.label}</h3>
@@ -868,14 +880,41 @@ export default function App() {
           <div id="product-archive-panel" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 animate-fadeIn">
             
             {/* Upper Category Filter indicators */}
-            <div className="mb-14 space-y-4">
-              <span className="text-xs text-amber-800 font-mono font-bold uppercase tracking-widest">
-                MINUA ATELIER COLLECTION
-              </span>
-              <h2 className="text-3xl font-semibold text-stone-900 tracking-tight capitalize font-sans">
-                {activeTab === 'all' ? (lang === 'KO' ? '전체 크래프트 라인업' : 'All Crafts Archive') : dict[`menu${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}` as keyof typeof dict] || activeTab}
-              </h2>
-              <div className="w-12 h-1 bg-amber-800 rounded-xs" />
+            <div className="mb-14 space-y-6">
+              <div className="space-y-4">
+                <span className="text-xs text-amber-800 font-mono font-bold uppercase tracking-widest">
+                  MINUA ATELIER COLLECTION
+                </span>
+                <h2 className="text-3xl font-semibold text-stone-900 tracking-tight capitalize font-sans">
+                  {activeTab === 'all' ? (lang === 'KO' ? '전체 크래프트 라인업' : 'All Crafts Archive') : dict[`menu${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}` as keyof typeof dict] || activeTab}
+                </h2>
+                <div className="w-12 h-1 bg-amber-800 rounded-xs" />
+              </div>
+
+              {/* Horizontal category sub-filter navigation bar */}
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-b border-stone-150 pb-5">
+                {[
+                  { id: 'all', label: lang === 'KO' ? '전체' : lang === 'JP' ? 'すべて' : 'All' },
+                  { id: 'ring', label: dict.menuRing },
+                  { id: 'bracelet', label: dict.menuBracelet },
+                  { id: 'keyring', label: dict.menuKeyring },
+                  { id: 'earring', label: dict.menuEarring },
+                  { id: 'necklace', label: dict.menuNecklace },
+                  { id: 'gift', label: dict.menuGift },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`px-4 py-2 text-xs font-mono tracking-wider uppercase rounded-full border transition-all cursor-pointer ${
+                      activeTab === item.id
+                        ? 'bg-stone-900 border-stone-900 text-stone-50 font-bold shadow-xs'
+                        : 'bg-white border-stone-200 hover:border-stone-400 text-stone-600'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Product Cards listings grids */}

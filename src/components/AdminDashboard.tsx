@@ -921,7 +921,9 @@ export default function AdminDashboard({
                     <option value="ring">반지 (Ring)</option>
                     <option value="bracelet">팔찌 (Bracelet)</option>
                     <option value="keyring">키링 (Keyring)</option>
-                    <option value="gift">기프트 세트 (Gift Set)</option>
+                    <option value="earring">귀걸이 (Earring)</option>
+                    <option value="necklace">목걸이 (Necklace)</option>
+                    <option value="gift">커플 / 선물 (Couple / Gift)</option>
                   </select>
                 </div>
               </div>
@@ -1126,7 +1128,9 @@ export default function AdminDashboard({
                     <option value="ring">반지 (Ring)</option>
                     <option value="bracelet">팔찌 (Bracelet)</option>
                     <option value="keyring">키링 (Keyring)</option>
-                    <option value="gift">기프트 세트 (Gift Set)</option>
+                    <option value="earring">귀걸이 (Earring)</option>
+                    <option value="necklace">목걸이 (Necklace)</option>
+                    <option value="gift">커플 / 선물 (Couple / Gift)</option>
                   </select>
                 </div>
               </div>
