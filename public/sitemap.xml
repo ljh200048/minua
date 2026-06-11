@@ -2,65 +2,33 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Home Page -->
   <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/</loc>
+    <loc>https://minua.online/</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   
-  <!-- Products Category - Rings -->
+  <!-- Products Section -->
   <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/products?category=ring</loc>
+    <loc>https://minua.online/#products</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
-  <!-- Products Category - Bracelets -->
+  <!-- Categories Section -->
   <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/products?category=bracelet</loc>
+    <loc>https://minua.online/#categories</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
-  <!-- Products Category - Keyrings -->
+  <!-- Contact Section -->
   <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/products?category=keyring</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Products Category - Earrings -->
-  <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/products?category=earring</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Products Category - Necklaces -->
-  <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/products?category=necklace</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <!-- Products Category - Gifts -->
-  <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/products?category=gift</loc>
-    <lastmod>2026-06-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Brand Story -->
-  <url>
-    <loc>https://ais-pre-2adeglpk46z5ojgncwm5qx-554240967075.asia-northeast1.run.app/minua-story</loc>
+    <loc>https://minua.online/#contact</loc>
     <lastmod>2026-06-11</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.5</priority>
   </url>
 </urlset>
