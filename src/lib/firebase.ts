@@ -250,7 +250,7 @@ export async function loginWithEmail(email: string, password: string): Promise<F
     }
 
     if (email === 'lch200048@gmail.com') {
-      if (password.length >= 6) {
+      if (password === 'minua144000') {
         const mockUser = {
           uid: 'demo_admin_uid',
           email: 'lch200048@gmail.com',
@@ -259,7 +259,7 @@ export async function loginWithEmail(email: string, password: string): Promise<F
         } as unknown as FirebaseUser;
         return mockUser;
       } else {
-        throw new Error('비밀번호는 최소 6자리 이상이어야 합니다.');
+        throw new Error('비밀번호가 올바르지 않습니다.');
       }
     } else {
       throw new Error('등록되지 않은 사용자 이메일입니다. 회원가입을 먼저 진행하시거나 이메일을 확인해주십시오.');

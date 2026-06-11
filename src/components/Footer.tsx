@@ -22,29 +22,58 @@ export default function Footer({ currentLang, onNavigateToAdmin }: FooterProps) 
     <footer className="bg-white text-stone-600 py-16 border-t border-neutral-150 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         
-        {/* Business details - exactly mirroring screenshot-4 */}
+        {/* Business details - precisely updated with user credentials */}
         <div className="text-stone-500 font-sans space-y-2 text-xs sm:text-[13px] tracking-wide leading-relaxed text-center sm:text-left">
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1">
-            <span>company: <strong className="text-neutral-800 font-medium">minua</strong></span>
-            <span className="text-neutral-300">/</span>
-            <span>owner: <strong className="text-neutral-800 font-medium">gildong Hong</strong></span>
-            <span className="text-neutral-300">/</span>
-            <span>phonnumber: <strong className="text-neutral-800 font-medium">010-1234-5678</strong></span>
-            <span className="text-neutral-300">/</span>
-            <span>office: <span className="text-neutral-700">111,11, Toegye-ro 11-gil, Jung-gu, Seoul, Republic of Korea</span></span>
-          </div>
+          {currentLang === 'KO' && (
+            <>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1">
+                <span>상호명: <strong className="text-neutral-800 font-medium">minua</strong></span>
+                <span className="text-neutral-300">/</span>
+                <span>대표자: <strong className="text-neutral-800 font-medium">이재호</strong></span>
+                <span className="text-neutral-300">/</span>
+                <span>사업자등록번호: <span className="text-neutral-700">638-58-00989</span></span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1 border-t border-neutral-100 pt-2">
+                <span>이메일: <a href="mailto:lch200048@gmail.com" className="text-neutral-700 underline hover:text-amber-800">lch200048@gmail.com</a></span>
+                <span className="text-neutral-300">/</span>
+                <span>개인정보관리책임자: <span className="text-neutral-700">이재호 (<a href="mailto:lch200048@gmail.com" className="hover:text-amber-800 underline">lch200048@gmail.com</a>)</span></span>
+              </div>
+            </>
+          )}
 
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1 border-t border-neutral-100 pt-2">
-            <span>business license : <span className="text-neutral-700">123-45-6789</span></span>
-            <span className="text-neutral-300">/</span>
-            <span>mail: <a href="mailto:minua@gmail.com" className="text-neutral-700 underline hover:text-amber-800">minua@gmail.com</a></span>
-          </div>
+          {currentLang === 'EN' && (
+            <>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1">
+                <span>company: <strong className="text-neutral-800 font-medium">minua</strong></span>
+                <span className="text-neutral-300">/</span>
+                <span>representative: <strong className="text-neutral-800 font-medium">Jaeho Lee</strong></span>
+                <span className="text-neutral-300">/</span>
+                <span>business license: <span className="text-neutral-700">638-58-00989</span></span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1 border-t border-neutral-100 pt-2">
+                <span>mail: <a href="mailto:lch200048@gmail.com" className="text-neutral-700 underline hover:text-amber-800">lch200048@gmail.com</a></span>
+                <span className="text-neutral-300">/</span>
+                <span>privacy officer: <span className="text-neutral-700">Jaeho Lee (<a href="mailto:lch200048@gmail.com" className="hover:text-amber-800 underline">lch200048@gmail.com</a>)</span></span>
+              </div>
+            </>
+          )}
 
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1 border-t border-neutral-100 pt-2">
-            <span>cpo: <span className="text-neutral-700">gildong Lee (minua@gmail.com)</span></span>
-            <span className="text-neutral-300">/</span>
-            <span>hosting provider : <span className="text-neutral-700">lnc.imweb</span></span>
-          </div>
+          {currentLang === 'JP' && (
+            <>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1">
+                <span>商号: <strong className="text-neutral-800 font-medium">minua</strong></span>
+                <span className="text-neutral-300">/</span>
+                <span>代表者: <strong className="text-neutral-800 font-medium">李在浩</strong></span>
+                <span className="text-neutral-300">/</span>
+                <span>事業者登録番号: <span className="text-neutral-700">638-58-00989</span></span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-1.5 gap-y-1 border-t border-neutral-100 pt-2">
+                <span>メール: <a href="mailto:lch200048@gmail.com" className="text-neutral-700 underline hover:text-amber-800">lch200048@gmail.com</a></span>
+                <span className="text-neutral-300">/</span>
+                <span>個人情報保護管理者: <span className="text-neutral-700">李在浩 (<a href="mailto:lch200048@gmail.com" className="hover:text-amber-800 underline">lch200048@gmail.com</a>)</span></span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Bottom Section: Arched minua logo & arrow & admin trigger */}
