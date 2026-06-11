@@ -118,6 +118,9 @@ export default function App() {
         } else {
           setActiveTab('all');
         }
+      } else if (path === '/login' || path === '/mypage') {
+        setIsAdminView(false);
+        setActiveTab('mypage');
       } else {
         setIsAdminView(false);
         if (path === '/') {
@@ -155,6 +158,10 @@ export default function App() {
       const currentFull = path + window.location.search;
       if (currentFull !== desiredPath) {
         window.history.pushState({}, '', desiredPath);
+      }
+    } else if (activeTab === 'mypage') {
+      if (path !== '/login' && path !== '/mypage') {
+        window.history.pushState({}, '', '/mypage');
       }
     } else {
       if (path !== '/' && activeTab !== 'mypage') {
