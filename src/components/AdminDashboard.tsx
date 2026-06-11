@@ -734,7 +734,7 @@ export default function AdminDashboard({
               <p className="text-stone-500 text-xs mb-6 max-w-2xl leading-relaxed">
                 홈페이지 하단에 위치한 <strong>Brand Packaging</strong> 섹션의 기프트 설명글 문구를 직접 커스텀 수정하여 영구 보관 관리합니다.<br />
                 수정한 카피는 메인 시그니처 프레젠테이션 카드 공간에 동기화되어 즉각 실시간 반영됩니다.<br />
-                <span className="text-amber-700 font-semibold">⚠️ 설명글 변경 시 설정한 관리자 암호를 묻습니다. (암호: <code>lch200048</code> 또는 <code>minua123</code>)</span>
+                <span className="text-amber-700 font-semibold">⚠️ 설명글 변경 시 설정한 관리자 암호를 묻습니다. (암호: <code>lch200048</code>, <code>minua123</code> 또는 <code>minua144000</code>)</span>
               </p>
 
               <div className="bg-white border border-stone-200/85 rounded-xl p-5 shadow-2xs">
@@ -767,7 +767,7 @@ export default function AdminDashboard({
                       <button
                         onClick={async () => {
                           const pw = prompt('관리자 비밀번호를 입력해주십시오:');
-                          if (pw !== 'lch200048' && pw !== 'minua123') {
+                          if (pw !== 'lch200048' && pw !== 'minua123' && pw !== 'minua144000') {
                             alert('비밀번호가 올바르지 않습니다. 관리자 권한이 없습니다.');
                             return;
                           }

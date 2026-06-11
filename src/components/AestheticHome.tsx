@@ -461,7 +461,7 @@ export default function AestheticHome({
                   <button
                     onClick={async () => {
                       const pw = prompt('관리자 비밀번호를 입력해주십시오:');
-                      if (pw !== 'lch200048' && pw !== 'minua123') {
+                      if (pw !== 'lch200048' && pw !== 'minua123' && pw !== 'minua144000') {
                         alert('비밀번호가 올바르지 않습니다. 관리자 권한이 없습니다.');
                         return;
                       }
