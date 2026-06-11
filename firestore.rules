@@ -39,6 +39,11 @@ service cloud.firestore {
              prod.defaultImage is string && prod.defaultImage.size() <= 1048576 &&
              (!('imageUrl' in prod) || (prod.imageUrl is string && prod.imageUrl.size() <= 1048576));
     }
+
+    function isValidCategory(cat) {
+      return cat.id is string && cat.id.size() <= 128 &&
+             cat.categoryImageUrl is string && cat.categoryImageUrl.size() <= 1048576;
+    }
     
     // Products Collection
     match /products/{productId} {
@@ -53,6 +58,12 @@ service cloud.firestore {
                     isValidProduct(request.resource.data);
                     
       allow delete: if isAdmin();
+    }
+    
+    // Categories Collection for Cover Images
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(categoryId) && isValidCategory(request.resource.data);
     }
     
     // Custom Image Overrides (Studio Atmosphere & Hero Banner)

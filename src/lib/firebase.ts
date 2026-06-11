@@ -295,7 +295,7 @@ export async function logoutUser(): Promise<void> {
 // -----------------------------------------------------
 // Products Database Persistence Layer (Firestore / Fallback)
 // -----------------------------------------------------
-import { Product } from '../types';
+import { Product, CategoryDoc } from '../types';
 
 let localProductsCache: Product[] | null = null;
 
@@ -754,4 +754,118 @@ export async function fetchAllImageOverridesFromDb(): Promise<{
   }
   return { images, descriptions };
 }
+
+/**
+ * Upload category image separately to Firebase Storage (Requirement #6, #8)
+ */
+export async function uploadCategoryImageToStorage(categoryId: string, base64DataUrl: string): Promise<string> {
+  if (!isFirebaseConfigured() || !storageInstance) {
+    return base64DataUrl;
+  }
+  
+  try {
+    const mimeMatch = base64DataUrl.match(/data:([^;]+);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const extension = mimeType.split('/')[1] || 'jpg';
+    const filePath = `categories/${categoryId}_${Date.now()}.${extension}`;
+    
+    const fileRef = storageRefFunc(storageInstance, filePath);
+    await uploadString(fileRef, base64DataUrl, 'data_url');
+    const downloadUrl = await getDownloadURL(fileRef);
+    return downloadUrl;
+  } catch (err) {
+    console.error('Firebase Storage category upload failed:', err);
+    throw err;
+  }
+}
+
+/**
+ * Saves/updates category cover image document in Firestore (Requirement #5, #6, #9)
+ */
+export async function saveCategoryInDb(categoryId: string, categoryImageUrl: string): Promise<void> {
+  const docPath = `categories/${categoryId}`;
+  
+  // Local Backup for offline / demo mode
+  try {
+    const stored = localStorage.getItem('minua_firestore_fallback_categories');
+    const parsed = stored ? JSON.parse(stored) : {};
+    parsed[categoryId] = {
+      id: categoryId,
+      categoryImageUrl,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem('minua_firestore_fallback_categories', JSON.stringify(parsed));
+  } catch (e) {
+    console.warn('Failed to save category to local fallback storage:', e);
+  }
+
+  if (!isFirebaseConfigured() || !dbInstance) {
+    return;
+  }
+  
+  try {
+    const docRef = doc(dbInstance, 'categories', categoryId);
+    const updateData: CategoryDoc = {
+      id: categoryId,
+      categoryImageUrl,
+      updatedAt: new Date().toISOString()
+    };
+    await setDoc(docRef, updateData, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, docPath);
+  }
+}
+
+/**
+ * Fetches all custom category configurations from Firestore (Requirement #7)
+ */
+export async function fetchCategoriesFromDb(): Promise<CategoryDoc[]> {
+  const collectionPath = 'categories';
+  const categories: CategoryDoc[] = [];
+  
+  // Seed initial values from local storage cache
+  try {
+    const stored = localStorage.getItem('minua_firestore_fallback_categories');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      Object.values(parsed).forEach((val: any) => {
+        if (val && val.id && val.categoryImageUrl) {
+          categories.push(val);
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Failed to load categories from local fallback storage:', e);
+  }
+
+  if (!isFirebaseConfigured() || !dbInstance) {
+    return categories;
+  }
+  
+  try {
+    const colRef = collection(dbInstance, collectionPath);
+    const q = query(colRef);
+    const sn = await getDocs(q);
+    
+    const remoteList: CategoryDoc[] = [];
+    sn.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.id && data.categoryImageUrl) {
+        remoteList.push({
+          id: data.id,
+          categoryImageUrl: data.categoryImageUrl,
+          updatedAt: data.updatedAt
+        });
+      }
+    });
+
+    if (remoteList.length > 0) {
+      return remoteList;
+    }
+  } catch (err) {
+    console.warn('Failed to fetch categories from Firestore:', err);
+  }
+  return categories;
+}
+
 

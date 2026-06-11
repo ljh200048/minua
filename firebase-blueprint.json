@@ -22,12 +22,27 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "nameKO", "nameEN", "nameJP", "category", "price", "defaultImage"]
+    },
+    "category": {
+      "title": "Category",
+      "description": "Store main navigation and custom category attributes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "categoryImageUrl": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "categoryImageUrl"]
     }
   },
   "firestore": {
     "products": {
       "schema": "product",
       "description": "Jewellery products database list"
+    },
+    "categories": {
+      "schema": "category",
+      "description": "Collection details and category cover images"
     }
   }
 }

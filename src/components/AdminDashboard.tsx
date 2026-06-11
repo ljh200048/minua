@@ -19,7 +19,7 @@ import {
   AlertTriangle,
   RotateCcw
 } from 'lucide-react';
-import { Product } from '../types';
+import { Product, CategoryDoc } from '../types';
 import { compressImage, getProductImage, saveOverriddenImage, getOverriddenImages, getOverriddenDescriptions, saveOverriddenDescription } from '../utils/imageDb';
 import { 
   loginWithEmail, 
@@ -32,7 +32,10 @@ import {
   saveImageOverrideInDb,
   uploadImageToStorage,
   uploadProductImage,
-  updateProductImageUrl
+  updateProductImageUrl,
+  fetchCategoriesFromDb,
+  saveCategoryInDb,
+  uploadCategoryImageToStorage
 } from '../lib/firebase';
 
 interface AdminDashboardProps {
@@ -51,6 +54,20 @@ export default function AdminDashboard({
   const [products, setProducts] = React.useState<Product[]>(initialProducts);
   const [imageTick, setImageTick] = React.useState(0);
   const [tempDescriptions, setTempDescriptions] = React.useState<Record<string, string>>({});
+  const [categoriesList, setCategoriesList] = React.useState<CategoryDoc[]>([]);
+
+  // Reload categories on mount or imageTick changes
+  React.useEffect(() => {
+    async function loadCategories() {
+      try {
+        const cats = await fetchCategoriesFromDb();
+        setCategoriesList(cats);
+      } catch (err) {
+        console.warn('Failed to load categories in dashboard:', err);
+      }
+    }
+    loadCategories();
+  }, [imageTick]);
 
   const [user, setUser] = React.useState<any>(auth ? auth.currentUser : null);
   const [authLoading, setAuthLoading] = React.useState(false);
@@ -571,69 +588,78 @@ export default function AdminDashboard({
                 카테고리 대표 이미지 관리 (Category Cover Images)
               </h2>
               <p className="text-stone-500 text-xs mb-6 max-w-2xl leading-relaxed">
-                홈페이지에 표시되는 주요 카테고리(이링, 링, 네클리스, 브레이슬릿) 에 대한 대표 이미지를 안전하게 동기화합니다. 
-                업로드된 이미지는 <strong>Firebase Storage</strong>에 영구 보존되며, Firestore Database에는 보안 이미지 다운로드 URL만 동기화됩니다. 
-                (로컬 브라우저 디스크에는 이미지 base64 등의 부담스러운 데이터를 남겨두지 않습니다.)
+                홈페이지에 표시되는 주요 카테고리(반지, 팔찌, 키링, 귀걸이, 목걸이, 커플 / 선물) 에 대한 대표 이미지를 안전하게 동기화합니다. 
+                업로드된 이미지는 <strong>Firebase Storage</strong>에 영구 보존되며, Firestore Database의 <code>categories</code> 콜렉션에 categoryImageUrl 값으로 동기화됩니다. 
+                이 기능은 일반 사용자는 조회가 가능하며, 현재 관리자 로그인 세션에 의해서만 실시간 수정/업로드가 허용됩니다.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 {[
                   { 
-                    id: 'earring', 
-                    labelUrlKey: 'col-earring-img', 
-                    titleKO: '귀걸이 (Earring)', 
-                    defaultImg: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80',
-                    fallbackDbKeys: ['col-earring-img', 'earring-cat-stub']
-                  },
-                  { 
                     id: 'ring', 
-                    labelUrlKey: 'col-ring-img', 
                     titleKO: '반지 (Ring)', 
-                    defaultImg: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&q=80',
+                    defaultImg: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80',
                     fallbackDbKeys: ['col-ring-img', 'ring-cat-stub']
                   },
                   { 
+                    id: 'bracelet', 
+                    titleKO: '팔찌 (Bracelet)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800&auto=format&fit=crop&q=80',
+                    fallbackDbKeys: ['col-bracelet-img', 'bracelet-cat-stub']
+                  },
+                  { 
+                    id: 'keyring', 
+                    titleKO: '키링 (Keyring)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=800&auto=format&fit=crop&q=80',
+                    fallbackDbKeys: ['col-keyring-img', 'keyring-cat-stub']
+                  },
+                  { 
+                    id: 'earring', 
+                    titleKO: '귀걸이 (Earring)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&auto=format&fit=crop&q=80',
+                    fallbackDbKeys: ['col-earring-img', 'earring-cat-stub']
+                  },
+                  { 
                     id: 'necklace', 
-                    labelUrlKey: 'col-necklace-img', 
-                    titleKO: '목걸이 (Necklaces)', 
-                    defaultImg: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&q=80',
+                    titleKO: '목걸이 (Necklace)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80',
                     fallbackDbKeys: ['col-necklace-img', 'necklace-cat-stub']
                   },
                   { 
-                    id: 'bracelet', 
-                    labelUrlKey: 'col-bracelet-img', 
-                    titleKO: '팔찌 (Bracelet)', 
-                    defaultImg: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600&q=80',
-                    fallbackDbKeys: ['col-bracelet-img', 'bracelet-cat-stub']
+                    id: 'gift', 
+                    titleKO: '선물 (Couple & Gift)', 
+                    defaultImg: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=800&auto=format&fit=crop&q=80',
+                    fallbackDbKeys: ['col-gift-img', 'gift-cat-stub']
                   }
                 ].map((categoryItem) => {
-                  const resolvedImgUrl = getProductImage(categoryItem.labelUrlKey, categoryItem.defaultImg);
-                  const isCustom = getOverriddenImages()[categoryItem.labelUrlKey] ? true : false;
+                  const foundCat = categoriesList.find(c => c.id === categoryItem.id);
+                  const isCustom = (foundCat && foundCat.categoryImageUrl && foundCat.categoryImageUrl !== 'empty') ? true : (getOverriddenImages()[categoryItem.id + '-cat-stub'] ? true : false);
+                  const resolvedImgUrl = (foundCat && foundCat.categoryImageUrl && foundCat.categoryImageUrl !== 'empty') ? foundCat.categoryImageUrl : getProductImage(categoryItem.id + '-cat-stub', categoryItem.defaultImg);
                   
                   return (
                     <div 
                       key={categoryItem.id} 
-                      className="bg-white border border-stone-200/85 rounded-xl p-4 flex flex-col justify-between shadow-2xs relative group"
+                      className="bg-white border border-stone-200/85 rounded-xl p-3 flex flex-col justify-between shadow-2xs relative group"
                     >
                       <div>
                         {/* Title & Badge */}
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[12.5px] font-sans font-semibold text-stone-850">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11.5px] font-sans font-semibold text-stone-800 truncate" title={categoryItem.titleKO}>
                             {categoryItem.titleKO}
                           </span>
                           {isCustom ? (
-                            <span className="px-2 py-0.5 rounded-full text-[8.5px] font-semibold bg-amber-50 text-amber-700 select-none uppercase tracking-wider font-mono">
-                              Custom Link
+                            <span className="px-1.5 py-0.5 rounded-full text-[7.5px] font-bold bg-amber-50 text-amber-700 select-none uppercase tracking-wider font-mono">
+                              Active
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[8.5px] font-semibold bg-stone-100 text-stone-500 select-none uppercase tracking-wider font-mono">
+                            <span className="px-1.5 py-0.5 rounded-full text-[7.5px] font-bold bg-stone-100 text-stone-500 select-none uppercase tracking-wider font-mono">
                               Default
                             </span>
                           )}
                         </div>
 
                         {/* Image Preview Window */}
-                        <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-stone-150 bg-stone-50 mb-4 flex items-center justify-center">
+                        <div className="relative aspect-square w-full rounded-lg overflow-hidden border border-stone-150 bg-stone-50 mb-3 flex items-center justify-center">
                           <img 
                             src={resolvedImgUrl} 
                             alt={categoryItem.titleKO}
@@ -644,10 +670,10 @@ export default function AdminDashboard({
                       </div>
 
                       {/* Management Controls */}
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         {/* Custom Image Upload Input and Button */}
-                        <label className="w-full py-2 bg-stone-50 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-lg cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
-                          <Camera size={13} />
+                        <label className="w-full py-1.5 bg-stone-50 hover:bg-stone-900 border border-stone-200 text-stone-800 hover:text-white rounded-lg cursor-pointer text-[10.5px] font-semibold flex items-center justify-center gap-1 transition-colors shadow-2xs">
+                          <Camera size={11} />
                           <span>대표 이미지 변경</span>
                           <input 
                             type="file" 
@@ -662,16 +688,22 @@ export default function AdminDashboard({
                                     const base64 = reader.result as string;
                                     const compressed = await compressImage(base64, 1000);
                                     
-                                    // 1. Upload compressed base64 to Firebase Storage and save URL in Firestore
-                                    const finalUrl = await saveImageOverrideInDb(categoryItem.labelUrlKey, compressed);
+                                    // 1. Upload compressed base64 to Firebase Storage (Requirement #6, #8)
+                                    const downloadUrl = await uploadCategoryImageToStorage(categoryItem.id, compressed);
                                     
-                                    // 2. Also map to alternate database keys so they stay 100% in sync
+                                    // 2. Save directly to Firestore's categories collection (Requirement #5, #6)
+                                    await saveCategoryInDb(categoryItem.id, downloadUrl);
+                                    
+                                    // 3. Sync to legacy keys for compatibility
+                                    saveOverriddenImage(categoryItem.id + '-cat-stub', downloadUrl);
                                     for (const altKey of categoryItem.fallbackDbKeys) {
-                                      await saveImageOverrideInDb(altKey, finalUrl);
-                                      saveOverriddenImage(altKey, finalUrl);
+                                      await saveImageOverrideInDb(altKey, downloadUrl);
+                                      saveOverriddenImage(altKey, downloadUrl);
                                     }
-                                    // 3. Force update rendering
+                                    
+                                    // 4. Force update rendering
                                     setImageTick(prev => prev + 1);
+                                    alert('카테고리 이미지가 성공적으로 업로드 및 저장되었습니다!');
                                   } catch (err) {
                                     console.error('Failed to change category image:', err);
                                     alert('카테고리 이미지 변경에 실패했습니다. 데이터를 확인하십시오.');
@@ -689,24 +721,30 @@ export default function AdminDashboard({
                             onClick={async () => {
                               if (confirm('이 카테고리 이미지를 초기 디자인(기존 기본 이미지)으로 복원하시겠습니까?')) {
                                 try {
-                                  // Clear Firestore entries if they exist
+                                  // Clear Firestore category collection
+                                  await saveCategoryInDb(categoryItem.id, '');
+                                  
+                                  // Revert local & overridden images
+                                  const localOverrides = getOverriddenImages();
+                                  delete localOverrides[categoryItem.id + '-cat-stub'];
                                   for (const keyToClear of categoryItem.fallbackDbKeys) {
                                     await saveImageOverrideInDb(keyToClear, '');
-                                    
-                                    // Delete from local cache
-                                    const localOverrides = getOverriddenImages();
                                     delete localOverrides[keyToClear];
-                                    localStorage.setItem('minua_image_overrides', JSON.stringify(localOverrides));
                                   }
+                                  localStorage.setItem('minua_image_overrides', JSON.stringify(localOverrides));
+                                  localStorage.removeItem('minua_firestore_fallback_categories'); // clear fallback cache
+                                  
                                   setImageTick(prev => prev + 1);
+                                  alert('원래 디자인으로 복원되었습니다.');
                                 } catch (err) {
                                   console.error('Failed to reset category image:', err);
+                                  alert('복원 처리 중 오류가 발생했습니다.');
                                 }
                               }
                             }}
-                            className="w-full py-1.5 bg-red-50 hover:bg-red-150 text-red-700 border border-red-200 hover:border-red-300 rounded-lg cursor-pointer text-[10.5px] font-medium flex items-center justify-center gap-1 transition-colors"
+                            className="w-full py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 hover:border-red-300 rounded-lg cursor-pointer text-[9.5px] font-medium flex items-center justify-center gap-0.5 transition-colors"
                           >
-                            <RotateCcw size={11} />
+                            <RotateCcw size={10} />
                             <span>기본 디자인으로 원복</span>
                           </button>
                         )}

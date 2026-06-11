@@ -29,9 +29,19 @@ import ProductDetailModal from './components/ProductDetailModal';
 import AdminDashboard from './components/AdminDashboard';
 
 import { INITIAL_PRODUCTS, INITIAL_REVIEWS, DICTIONARY } from './data';
-import { Product, CartItem, Order, Review, User } from './types';
+import { Product, CartItem, Order, Review, User, CategoryDoc } from './types';
 import { getProductImage, saveOverriddenImage, getOverriddenImages, importOverriddenImages, compressImage, importOverriddenDescriptions } from './utils/imageDb';
-import { fetchProducts, auth, isFirebaseConfigured, fetchAllImageOverridesFromDb, saveProductInDb, saveImageOverrideInDb } from './lib/firebase';
+import { 
+  fetchProducts, 
+  auth, 
+  isFirebaseConfigured, 
+  fetchAllImageOverridesFromDb, 
+  saveProductInDb, 
+  saveImageOverrideInDb,
+  fetchCategoriesFromDb,
+  saveCategoryInDb,
+  uploadCategoryImageToStorage
+} from './lib/firebase';
 
 export default function App() {
   const [lang, setLang] = React.useState<'KO' | 'EN' | 'JP'>('KO');
@@ -40,7 +50,19 @@ export default function App() {
 
   // Dynamic products catalog, populated from cloud database with local fallback
   const [productsList, setProductsList] = React.useState<Product[]>(INITIAL_PRODUCTS);
+  const [categoriesList, setCategoriesList] = React.useState<CategoryDoc[]>([]);
   const [isAdminView, setIsAdminView] = React.useState(false);
+
+  // Helper to resolve category images from categories collection in Firestore
+  const getCategoryCoverImage = (categoryId: string, defaultUrl: string): string => {
+    const found = categoriesList.find(c => c.id === categoryId);
+    if (found && found.categoryImageUrl) {
+      if (found.categoryImageUrl !== 'empty') {
+        return found.categoryImageUrl;
+      }
+    }
+    return getProductImage(categoryId + '-cat-stub', defaultUrl);
+  };
 
   // Admin user tracking state (Firebase + memory fallback)
   const [adminUser, setAdminUser] = React.useState<any>(() => {
@@ -89,6 +111,13 @@ export default function App() {
         }
       } catch (err) {
         console.warn('Cloud image overrides load error:', err);
+      }
+
+      try {
+        const cats = await fetchCategoriesFromDb();
+        setCategoriesList(cats);
+      } catch (err) {
+        console.warn('Click categories load error:', err);
       }
 
       const data = await fetchProducts(INITIAL_PRODUCTS);
@@ -595,7 +624,7 @@ export default function App() {
                     className="relative aspect-square rounded-2xl overflow-hidden group border border-stone-100 shadow-2xs"
                   >
                     <img
-                      src={getProductImage(cat.id + '-cat-stub', cat.bg)}
+                      src={getCategoryCoverImage(cat.id, cat.bg)}
                       alt={cat.label}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       referrerPolicy="no-referrer"
@@ -620,35 +649,63 @@ export default function App() {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  saveOverriddenImage(cat.id + '-cat-stub', reader.result as string);
-                                  setImageTick(prev => prev + 1);
-                                };
-                                reader.readAsDataURL(file);
+                                try {
+                                  const reader = new FileReader();
+                                  reader.onloadend = async () => {
+                                    try {
+                                      const base64 = reader.result as string;
+                                      const compressed = await compressImage(base64, 1000);
+                                      // Distinct Category Image Upload Function (Requirement #6, #8)
+                                      const storageUrl = await uploadCategoryImageToStorage(cat.id, compressed);
+                                      // Save to Firestore (Requirement #5)
+                                      await saveCategoryInDb(cat.id, storageUrl);
+                                      setImageTick(prev => prev + 1);
+                                      alert(lang === 'KO' ? '카테고리 대표 이미지가 변경되었습니다.' : 'Category cover image updated successfully.');
+                                    } catch (innerErr) {
+                                      console.error('Category cover upload error:', innerErr);
+                                      alert(lang === 'KO' ? '업로드 중 오류가 발생했습니다.' : 'Upload failed.');
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                } catch (err) {
+                                  console.error(err);
+                                }
                               }
                             }}
                           />
                         </label>
-                        {getOverriddenImages()[cat.id + '-cat-stub'] && (
-                          <button
-                            onClick={() => {
-                              if (confirm(lang === 'KO' ? '이 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this category image?')) {
-                                const overrides = getOverriddenImages();
-                                delete overrides[cat.id + '-cat-stub'];
-                                localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
-                                setImageTick(prev => prev + 1);
-                              }
-                            }}
-                            className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-1.5 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[9px] font-mono tracking-wider font-semibold transition-colors"
-                            title={lang === 'KO' ? '원래대로 복구' : 'Revert'}
-                          >
-                            <RefreshCw size={10} />
-                          </button>
-                        )}
+                        {(() => {
+                          const hasCustom = categoriesList.some(c => c.id === cat.id && c.categoryImageUrl);
+                          const hasLocal = !!getOverriddenImages()[cat.id + '-cat-stub'];
+                          if (hasCustom || hasLocal) {
+                            return (
+                              <button
+                                onClick={async () => {
+                                  if (confirm(lang === 'KO' ? '이 이미지를 원래 디자인으로 복원하겠습니까?' : 'Revert this category image?')) {
+                                    try {
+                                      await saveCategoryInDb(cat.id, '');
+                                      const overrides = getOverriddenImages();
+                                      delete overrides[cat.id + '-cat-stub'];
+                                      localStorage.setItem('minua_image_overrides', JSON.stringify(overrides));
+                                      localStorage.removeItem('minua_firestore_fallback_categories'); // Clear local category state cache
+                                      setImageTick(prev => prev + 1);
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }
+                                }}
+                                className="bg-white/95 hover:bg-red-50 hover:text-red-600 border border-stone-200 text-stone-500 rounded-full px-1.5 py-1.5 cursor-pointer shadow-xs flex items-center gap-1 text-[9px] font-mono tracking-wider font-semibold transition-colors"
+                                title={lang === 'KO' ? '원래대로 복구' : 'Revert'}
+                              >
+                                <RefreshCw size={10} />
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     )}
                     

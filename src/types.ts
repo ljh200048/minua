@@ -74,5 +74,11 @@ export interface User {
   phone?: string;
 }
 
+export interface CategoryDoc {
+  id: string;
+  categoryImageUrl: string;
+  updatedAt?: string;
+}
+
 export type LangType = 'KO' | 'EN' | 'JP';
 
