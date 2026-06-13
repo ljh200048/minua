@@ -250,11 +250,12 @@ export async function loginWithEmail(email: string, password: string): Promise<F
     }
   }
 
-  // Pre-login logging as requested: connection check
-  console.log('Firebase login attempt details (Immediate pre-login check):', {
-    appName: app ? app.name : 'Unknown app name',
-    projectId: firebaseConfig.projectId
-  });
+  // Pre-login logging as requested: connection and config parameter diagnostics
+  console.log('Pre-login Config check:');
+  console.log('projectId:', firebaseConfig.projectId);
+  console.log('authDomain:', firebaseConfig.authDomain);
+  console.log('storageBucket:', firebaseConfig.storageBucket);
+  console.log('Firebase app name:', app ? app.name : 'No App Instance (or Unknown)');
 
   try {
     const credential = await signInWithEmailAndPassword(authInstance, email, password);
