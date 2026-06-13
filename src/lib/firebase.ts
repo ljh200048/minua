@@ -333,6 +333,51 @@ export async function uploadImageToStorage(productId: string, base64DataUrl: str
   }
 }
 
+function fileToCompressedBase64(file: File, maxDimension: number = 800): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(reader.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(compressed);
+        } catch (e) {
+          resolve(reader.result as string);
+        }
+      };
+      img.onerror = () => {
+        resolve(reader.result as string);
+      };
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => {
+      resolve('');
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
  * 2. uploadProductImage 함수:
  * 선택한 이미지 파일(File)을 Firebase Storage에 직접 업로드하고 getDownloadURL 이미지 URL을 가져옵니다.
@@ -340,9 +385,9 @@ export async function uploadImageToStorage(productId: string, base64DataUrl: str
 export async function uploadProductImage(productId: string, file: File): Promise<string> {
   const cleanId = (productId || 'new_product').replace(/[^a-zA-Z0-9_\\-]+/g, '_');
   if (!isFirebaseConfigured() || !storageInstance) {
-    // Local fallback: create a preview Blob URL for immediate use in local demomode.
-    console.warn('Real Firebase is not configured. Falling back to preview object-URL.');
-    return URL.createObjectURL(file);
+    // Local fallback: convert file to compressed base64 so it persists on reload!
+    console.warn('Real Firebase is not configured. Converting to persistent compressed base64.');
+    return fileToCompressedBase64(file);
   }
   
   try {
@@ -448,12 +493,7 @@ export async function fetchProducts(initialList: Product[]): Promise<Product[]> 
     const sn = await getDocs(q);
     
     if (sn.empty) {
-      // Seed initial data to cloud firestore synchronously
-      console.log('Firestore products collection is empty. Seeding defaults...');
-      const seedPromises = initialList.map(item => {
-        return setDoc(doc(dbInstance, collectionPath, item.id), item);
-      });
-      await Promise.all(seedPromises);
+      console.log('Firestore products collection is empty. Returning default products list as fallback.');
       return initialList;
     }
     
@@ -785,21 +825,20 @@ export async function uploadCategoryImageToStorage(categoryId: string, base64Dat
 export async function saveCategoryInDb(categoryId: string, categoryImageUrl: string): Promise<void> {
   const docPath = `categories/${categoryId}`;
   
-  // Local Backup for offline / demo mode
-  try {
-    const stored = localStorage.getItem('minua_firestore_fallback_categories');
-    const parsed = stored ? JSON.parse(stored) : {};
-    parsed[categoryId] = {
-      id: categoryId,
-      categoryImageUrl,
-      updatedAt: new Date().toISOString()
-    };
-    localStorage.setItem('minua_firestore_fallback_categories', JSON.stringify(parsed));
-  } catch (e) {
-    console.warn('Failed to save category to local fallback storage:', e);
-  }
-
   if (!isFirebaseConfigured() || !dbInstance) {
+    // Local Backup ONLY when Firebase is offline / unconfigured
+    try {
+      const stored = localStorage.getItem('minua_firestore_fallback_categories');
+      const parsed = stored ? JSON.parse(stored) : {};
+      parsed[categoryId] = {
+        id: categoryId,
+        categoryImageUrl,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('minua_firestore_fallback_categories', JSON.stringify(parsed));
+    } catch (e) {
+      console.warn('Failed to save category to local fallback storage:', e);
+    }
     return;
   }
   
@@ -821,24 +860,23 @@ export async function saveCategoryInDb(categoryId: string, categoryImageUrl: str
  */
 export async function fetchCategoriesFromDb(): Promise<CategoryDoc[]> {
   const collectionPath = 'categories';
-  const categories: CategoryDoc[] = [];
   
-  // Seed initial values from local storage cache
-  try {
-    const stored = localStorage.getItem('minua_firestore_fallback_categories');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      Object.values(parsed).forEach((val: any) => {
-        if (val && val.id && val.categoryImageUrl) {
-          categories.push(val);
-        }
-      });
-    }
-  } catch (e) {
-    console.warn('Failed to load categories from local fallback storage:', e);
-  }
-
   if (!isFirebaseConfigured() || !dbInstance) {
+    // Return local storage fallback ONLY when Firebase is offline / unconfigured
+    const categories: CategoryDoc[] = [];
+    try {
+      const stored = localStorage.getItem('minua_firestore_fallback_categories');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        Object.values(parsed).forEach((val: any) => {
+          if (val && val.id && val.categoryImageUrl) {
+            categories.push(val);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to load categories from local fallback storage:', e);
+    }
     return categories;
   }
   
@@ -859,13 +897,11 @@ export async function fetchCategoriesFromDb(): Promise<CategoryDoc[]> {
       }
     });
 
-    if (remoteList.length > 0) {
-      return remoteList;
-    }
+    return remoteList;
   } catch (err) {
     console.warn('Failed to fetch categories from Firestore:', err);
   }
-  return categories;
+  return [];
 }
 
 

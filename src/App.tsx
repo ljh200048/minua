@@ -81,12 +81,18 @@ export default function App() {
     if (!auth) return;
     const unsubscribe = auth.onAuthStateChanged((curr: any) => {
       if (curr) {
-        setAdminUser(curr);
-        localStorage.setItem('minua_admin_session', JSON.stringify({
-          uid: curr.uid,
-          email: curr.email,
-          displayName: curr.displayName || 'Admin'
-        }));
+        if (curr.email === 'lch200048@gmail.com') {
+          setAdminUser(curr);
+          localStorage.setItem('minua_admin_session', JSON.stringify({
+            uid: curr.uid,
+            email: curr.email,
+            displayName: curr.displayName || 'Admin'
+          }));
+        } else {
+          // If a standard customer logs in, they of them should not pollute the admin's session
+          setAdminUser(null);
+          localStorage.removeItem('minua_admin_session');
+        }
       } else {
         if (isFirebaseConfigured()) {
           setAdminUser(null);
@@ -422,6 +428,9 @@ export default function App() {
         setProductsList(updated);
       }}
       onClose={navigateToHome}
+      onCategoryImagesUpdated={() => {
+        setImageTick(prev => prev + 1);
+      }}
     />
   ) : (
     <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col justify-between selection:bg-amber-100 selection:text-stone-900 font-sans">
@@ -877,6 +886,37 @@ export default function App() {
                 </h2>
                 <div className="w-12 h-1 bg-amber-800 rounded-xs" />
               </div>
+
+              {/* Category specific dynamic cover banner */}
+              {activeTab !== 'all' && activeTab !== 'best' && (
+                <div 
+                  className="relative w-full h-44 sm:h-56 md:h-64 rounded-3xl overflow-hidden mt-6 border border-stone-200/55 shadow-2xs group"
+                  id={`category-cover-banner-${activeTab}`}
+                >
+                  <img 
+                    src={getCategoryCoverImage(
+                      activeTab, 
+                      activeTab === 'ring' ? 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=1000&q=80' :
+                      activeTab === 'bracelet' ? 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=1000&q=80' :
+                      activeTab === 'keyring' ? 'https://images.unsplash.com/photo-1582139329536-e7284fece509?w=1000&q=80' :
+                      activeTab === 'earring' ? 'https://images.unsplash.com/photo-1635767798638-3e25273a8236?w=1000&q=80' :
+                      activeTab === 'necklace' ? 'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?w=1000&q=80' :
+                      'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=1000&q=80'
+                    )} 
+                    alt={`${activeTab} cover banner`}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-[1.015]"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-[0.5px] p-6 sm:p-10 flex flex-col justify-end bg-gradient-to-t from-stone-950/45 via-transparent to-transparent">
+                    <span className="text-[10px] font-mono tracking-[0.25em] text-[#E5D5C5] block font-bold uppercase mb-1">
+                      MINUA SIGNATURE COLLECTION
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-serif text-white tracking-widest uppercase font-light">
+                      {dict[`menu${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}` as keyof typeof dict] || activeTab}
+                    </h3>
+                  </div>
+                </div>
+              )}
 
               {/* Horizontal category sub-filter navigation bar */}
               <div className="flex flex-wrap items-center gap-2 pt-2 border-b border-stone-150 pb-5">

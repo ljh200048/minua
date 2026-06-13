@@ -20,6 +20,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { Product, CategoryDoc } from '../types';
+import CategoryCoverManager from './CategoryCoverManager';
 import { compressImage, getProductImage, saveOverriddenImage, getOverriddenImages, getOverriddenDescriptions, saveOverriddenDescription } from '../utils/imageDb';
 import { 
   loginWithEmail, 
@@ -43,18 +44,27 @@ interface AdminDashboardProps {
   initialProducts: Product[];
   onProductsUpdated: (updatedList: Product[]) => void;
   onClose: () => void;
+  onCategoryImagesUpdated?: () => void;
 }
 
 export default function AdminDashboard({
   currentLang,
   initialProducts,
   onProductsUpdated,
-  onClose
+  onClose,
+  onCategoryImagesUpdated
 }: AdminDashboardProps) {
   const [products, setProducts] = React.useState<Product[]>(initialProducts);
   const [imageTick, setImageTick] = React.useState(0);
   const [tempDescriptions, setTempDescriptions] = React.useState<Record<string, string>>({});
   const [categoriesList, setCategoriesList] = React.useState<CategoryDoc[]>([]);
+
+  const triggerImageUpdate = () => {
+    setImageTick(prev => prev + 1);
+    if (onCategoryImagesUpdated) {
+      onCategoryImagesUpdated();
+    }
+  };
 
   // Reload categories on mount or imageTick changes
   React.useEffect(() => {
@@ -624,9 +634,8 @@ export default function AdminDashboard({
                     <div className="flex justify-end">
                       <button
                         onClick={async () => {
-                          const pw = prompt('관리자 비밀번호를 입력해주십시오:');
-                          if (pw !== 'minua144000') {
-                            alert('비밀번호가 올바르지 않습니다. 관리자 권한이 없습니다.');
+                          if (!isAdminAuthenticated) {
+                            alert('관리자 계정(lch200048@gmail.com) 대시보드로 로그인되지 않았습니다.');
                             return;
                           }
                           const keyName = 'brand-packaging-image';
@@ -659,6 +668,13 @@ export default function AdminDashboard({
                 </div>
               </div>
             </div>
+
+            {/* CATEGORY COVER IMAGE MANAGEMENT SECTION */}
+            <CategoryCoverManager 
+              isAdmin={isAdminAuthenticated} 
+              categoriesList={categoriesList} 
+              onUpdate={triggerImageUpdate} 
+            />
 
           </div>
         )}

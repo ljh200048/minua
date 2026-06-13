@@ -19,10 +19,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'lch200048@gmail.com' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+      return isSignedIn() && request.auth.token.email == 'lch200048@gmail.com';
     }
     
     function isValidId(id) {
@@ -76,6 +73,11 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isSignedIn();
       allow write: if false;
+    }
+
+    // Connection Diagnostic Match block
+    match /test/connection {
+      allow read: if true;
     }
   }
 }
