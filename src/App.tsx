@@ -243,8 +243,7 @@ export default function App() {
   });
 
   const isAdminAuthenticated = !!(
-    (adminUser && adminUser.email === 'lch200048@gmail.com') ||
-    (loggedInUser && loggedInUser.email === 'lch200048@gmail.com')
+    adminUser && adminUser.email === 'lch200048@gmail.com'
   );
 
   // Active modulations

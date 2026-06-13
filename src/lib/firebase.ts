@@ -6,8 +6,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
   signOut, 
   onAuthStateChanged, 
   User as FirebaseUser,
@@ -36,6 +34,13 @@ import {
   uploadBytes
 } from 'firebase/storage';
 import firebaseConfig from './firebase-applet-config.json';
+
+// Log firebase configuration details on application startup as requested
+console.log('Current firebaseConfig details on startup:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  storageBucket: firebaseConfig.storageBucket
+});
 
 // Detect if real Firebase credentials are provided
 export function isFirebaseConfigured(): boolean {
@@ -129,29 +134,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Google Authentication Flow
-const googleProvider = new GoogleAuthProvider();
-
-export async function loginWithGoogle(): Promise<FirebaseUser | null> {
-  if (!isFirebaseConfigured()) {
-    // Mock user for Local Demo mode
-    const mockUser = {
-      uid: 'demo_admin_uid',
-      email: 'lch200048@gmail.com',
-      displayName: 'Demo Manager',
-      emailVerified: true,
-    } as unknown as FirebaseUser;
-    return mockUser;
-  }
-  
-  try {
-    const result = await signInWithPopup(authInstance, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error('Google Sign-In failed:', error);
-    throw error;
-  }
-}
+// Google authentication clean up (explicitly removed Google Provider as instructed)
 
 export async function signUpWithEmail(email: string, password: string, displayName: string, phone: string): Promise<FirebaseUser | null> {
   if (!isFirebaseConfigured() || !authInstance) {
@@ -267,6 +250,12 @@ export async function loginWithEmail(email: string, password: string): Promise<F
     }
   }
 
+  // Pre-login logging as requested: connection check
+  console.log('Firebase login attempt details (Immediate pre-login check):', {
+    appName: app ? app.name : 'Unknown app name',
+    projectId: firebaseConfig.projectId
+  });
+
   try {
     const credential = await signInWithEmailAndPassword(authInstance, email, password);
     return credential.user;
@@ -274,7 +263,9 @@ export async function loginWithEmail(email: string, password: string): Promise<F
     console.error('Email password Sign-In failed:', error);
     // User-friendly error translator
     let message = error.message;
-    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+    if (error.code === 'auth/operation-not-allowed') {
+      message = 'Firebase Console > Authentication > Sign-in method > Email/Password를 사용 설정해야 합니다. 또한 현재 사이트의 firebaseConfig가 같은 프로젝트인지 확인하세요.';
+    } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       message = '틀린 비밀번호이거나 올바르지 않은 사용자 인증 정보입니다.';
     } else if (error.code === 'auth/user-not-found') {
       message = '해당 이메일로 가입된 사용자를 찾을 수 없습니다.';

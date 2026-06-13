@@ -345,11 +345,6 @@ export default function AestheticHome({
                 {isAdminAuthenticated && (
                   <button
                     onClick={async () => {
-                      const pw = prompt('관리자 비밀번호를 입력해주십시오:');
-                      if (pw !== 'minua144000') {
-                        alert('비밀번호가 올바르지 않습니다. 관리자 권한이 없습니다.');
-                        return;
-                      }
                       const keyName = 'brand-packaging-image';
                       const currentDesc = getOverriddenDescriptions()[keyName] || "미누아의 시그니처 쇼핑백과 고급 선물 패키징은 주얼리를 구매하시는 모든 분들에게 무상으로 제공되는 세련된 선물 제안입니다. 튼튼하면서도 클래식한 마감의 감각적인 기프트 하드 박스와 프렌치 실크 리본이 소중한 마음에 영원의 숨결과 은은하게 머금는 명품 본연의 깊이감을 더해 줍니다.";
                       const newDesc = prompt('새로운 Brand Packaging 설명글을 입력해 주십시오:', currentDesc);
