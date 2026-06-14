@@ -109,18 +109,18 @@ export function importOverriddenImages(dict: Record<string, string>): void {
 }
 
 export function getProductImage(productId: string, defaultUrl: string, imageUrl?: string): string {
-  // Priority 1: If direct valid imageUrl exists from Firestore (non-base64, non-blob), prioritize it.
-  if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('data:'))) {
-    return imageUrl;
-  }
-  
-  // Priority 2: If there is a local/cached override for this product or banner, prioritize it.
+  // Priority 1: If there is a local/cached override for this product or banner, prioritize it.
   const overrides = getOverriddenImages();
   if (overrides[productId]) {
     if (overrides[productId] === 'empty') {
       return '';
     }
     return overrides[productId];
+  }
+
+  // Priority 2: If direct valid imageUrl exists, prioritize it.
+  if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('data:'))) {
+    return imageUrl;
   }
 
   // Priority 3: Fallback to defaultUrl

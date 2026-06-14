@@ -179,6 +179,13 @@ export async function signUpWithEmail(email: string, password: string, displayNa
     return mockUser;
   }
 
+  // Pre-signup logging as requested: connection and config parameter diagnostics
+  console.log('Firebase signup attempt details (Immediate pre-signup check):');
+  console.log('Firebase app name:', app ? app.name : 'No App Instance (or Unknown)');
+  console.log('projectId:', firebaseConfig.projectId);
+  console.log('authDomain:', firebaseConfig.authDomain);
+  console.log('storageBucket:', firebaseConfig.storageBucket);
+
   try {
     const credential = await createUserWithEmailAndPassword(authInstance, email, password);
     if (credential.user) {
@@ -199,7 +206,9 @@ export async function signUpWithEmail(email: string, password: string, displayNa
   } catch (error: any) {
     console.error('Email registration failed:', error);
     let message = error.message;
-    if (error.code === 'auth/email-already-in-use') {
+    if (error.code === 'auth/operation-not-allowed') {
+      message = 'Firebase Console > Authentication > Sign-in method > Email/Password를 사용 설정해야 합니다. 또한 현재 사이트의 firebaseConfig가 같은 프로젝트인지 확인하세요.';
+    } else if (error.code === 'auth/email-already-in-use') {
       message = '이미 사용 중인 이메일 주소입니다.';
     } else if (error.code === 'auth/weak-password') {
       message = '비밀번호는 최소 6자리 이상이어야 합니다.';
@@ -509,10 +518,10 @@ export async function fetchProducts(initialList: Product[]): Promise<Product[]> 
       return initialList;
     }
     
-    const list: Product[] = [];
+    const list: Product[] = [...initialList];
     sn.forEach(docSnap => {
       const data = docSnap.data();
-      list.push({
+      const p = {
         id: data.id,
         nameKO: data.nameKO || '',
         nameEN: data.nameEN || '',
@@ -526,7 +535,14 @@ export async function fetchProducts(initialList: Product[]): Promise<Product[]> 
         materialKO: data.materialKO || '',
         materialEN: data.materialEN || '',
         options: data.options || {}
-      } as Product);
+      } as Product;
+
+      const idx = list.findIndex(item => item.id === p.id);
+      if (idx >= 0) {
+        list[idx] = p; // Override default/preset product with updated data from db
+      } else {
+        list.push(p); // Add new custom products
+      }
     });
     return list;
   } catch (err) {
