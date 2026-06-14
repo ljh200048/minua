@@ -64,47 +64,23 @@ export default function App() {
     return getProductImage(categoryId + '-cat-stub', defaultUrl);
   };
 
-  // Admin user tracking state (Firebase + memory fallback)
-  const [adminUser, setAdminUser] = React.useState<any>(() => {
-    const saved = localStorage.getItem('minua_admin_session');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  // Admin user tracking state (driven strictly by Firebase Auth current user email)
+  const [adminUser, setAdminUser] = React.useState<any>(null);
 
   React.useEffect(() => {
     if (!auth) return;
     const unsubscribe = auth.onAuthStateChanged((curr: any) => {
-      if (curr) {
-        if (curr.email === 'lch200048@gmail.com') {
-          setAdminUser(curr);
-          setIsAdminView(true);
-          if (window.location.pathname !== '/admin') {
-            window.history.pushState({}, '', '/admin');
-          }
-          localStorage.setItem('minua_admin_session', JSON.stringify({
-            uid: curr.uid,
-            email: curr.email,
-            displayName: curr.displayName || 'Admin'
-          }));
-        } else {
-          // If a standard customer logs in, they of them should not pollute the admin's session
-          setAdminUser(null);
-          localStorage.removeItem('minua_admin_session');
+      if (curr && curr.email === 'lch200048@gmail.com') {
+        setAdminUser(curr);
+        setIsAdminView(true);
+        if (window.location.pathname !== '/admin') {
+          window.history.pushState({}, '', '/admin');
         }
       } else {
-        if (isFirebaseConfigured()) {
-          setAdminUser(null);
-          setIsAdminView(false);
-          localStorage.removeItem('minua_admin_session');
-          if (window.location.pathname === '/admin') {
-            window.history.pushState({}, '', '/');
-          }
+        setAdminUser(null);
+        setIsAdminView(false);
+        if (window.location.pathname === '/admin') {
+          window.history.pushState({}, '', '/');
         }
       }
     });
