@@ -83,6 +83,10 @@ export default function App() {
       if (curr) {
         if (curr.email === 'lch200048@gmail.com') {
           setAdminUser(curr);
+          setIsAdminView(true);
+          if (window.location.pathname !== '/admin') {
+            window.history.pushState({}, '', '/admin');
+          }
           localStorage.setItem('minua_admin_session', JSON.stringify({
             uid: curr.uid,
             email: curr.email,
@@ -96,7 +100,11 @@ export default function App() {
       } else {
         if (isFirebaseConfigured()) {
           setAdminUser(null);
+          setIsAdminView(false);
           localStorage.removeItem('minua_admin_session');
+          if (window.location.pathname === '/admin') {
+            window.history.pushState({}, '', '/');
+          }
         }
       }
     });

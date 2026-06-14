@@ -75,6 +75,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Users Profile Collection
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
     // Connection Diagnostic Match block
     match /test/connection {
       allow read: if true;

@@ -60,7 +60,11 @@ let storageInstance: any = null;
 if (isFirebaseConfigured()) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
+    if (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)') {
+      dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    } else {
+      dbInstance = getFirestore(app);
+    }
     authInstance = getAuth(app);
     storageInstance = getStorage(app);
     
@@ -70,7 +74,7 @@ if (isFirebaseConfigured()) {
         await getDocFromServer(doc(dbInstance, 'test', 'connection'));
       } catch (error) {
         if (error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration or network.");
+          console.warn("Please check your Firebase configuration or network. If you are using a custom Firebase project (like minua-d6951) in the sandbox workspace, ensure that Cloud Firestore has been initialized and the (default) database exists in your Firebase Console.");
         }
       }
     };
@@ -82,6 +86,7 @@ if (isFirebaseConfigured()) {
 
 export const db = dbInstance;
 export const auth = authInstance;
+export const storage = storageInstance;
 
 export enum OperationType {
   CREATE = 'create',
@@ -251,27 +256,42 @@ export async function loginWithEmail(email: string, password: string): Promise<F
   }
 
   // Pre-login logging as requested: connection and config parameter diagnostics
-  console.log('Pre-login Config check:');
+  console.log('Firebase login attempt details (Immediate pre-login check):');
+  console.log('Firebase app name:', app ? app.name : 'No App Instance (or Unknown)');
   console.log('projectId:', firebaseConfig.projectId);
   console.log('authDomain:', firebaseConfig.authDomain);
   console.log('storageBucket:', firebaseConfig.storageBucket);
-  console.log('Firebase app name:', app ? app.name : 'No App Instance (or Unknown)');
 
   try {
     const credential = await signInWithEmailAndPassword(authInstance, email, password);
     return credential.user;
   } catch (error: any) {
     console.error('Email password Sign-In failed:', error);
-    // User-friendly error translator
     let message = error.message;
+    let alertMsg = '';
+
     if (error.code === 'auth/operation-not-allowed') {
-      message = 'Firebase Console > Authentication > Sign-in method > Email/Password를 사용 설정해야 합니다. 또한 현재 사이트의 firebaseConfig가 같은 프로젝트인지 확인하세요.';
-    } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-      message = '틀린 비밀번호이거나 올바르지 않은 사용자 인증 정보입니다.';
+      alertMsg = 'Firebase Console > Authentication > Sign-in method > Email/Password를 사용 설정해야 합니다. 또한 현재 사이트의 firebaseConfig가 같은 프로젝트인지 확인하세요.';
+      message = alertMsg;
     } else if (error.code === 'auth/user-not-found') {
-      message = '해당 이메일로 가입된 사용자를 찾을 수 없습니다.';
+      alertMsg = '해당 이메일로 가입된 사용자를 찾을 수 없습니다. 회원가입 기능이 차단 또는 지원되지 않는다면 Firebase Console > Authentication > Users > Add user에서 직접 생성한 계정으로 로그인해주세요.';
+      message = alertMsg;
+    } else if (error.code === 'auth/wrong-password') {
+      alertMsg = '비밀번호가 올바르지 않습니다. 다시 입력해 주세요.';
+      message = alertMsg;
+    } else if (error.code === 'auth/invalid-credential') {
+      alertMsg = '올바르지 않은 자격 증명(이메일 또는 비밀번호가 틀림)입니다. 회원가입이 완료되지 않았다면 Firebase Console > Authentication > Users > Add user에서 직접 사용자를 추가하여 로그인해 주세요.';
+      message = alertMsg;
+    } else if (error.code === 'auth/unauthorized-domain') {
+      alertMsg = '현재 도메인은 이 Firebase 프로젝트의 승인된 도메인 목록에 없습니다. Firebase Console > Authentication > Settings > Authorized domains에 현재 사이트의 도메인을 추가해 주세요.';
+      message = alertMsg;
     } else if (error.code === 'auth/invalid-email') {
-      message = '유효하지 않은 이메일 형식입니다.';
+      alertMsg = '유효하지 않은 이메일 형식입니다.';
+      message = alertMsg;
+    }
+
+    if (alertMsg) {
+      window.alert(alertMsg);
     }
     throw new Error(message);
   }
